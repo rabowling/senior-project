@@ -8,7 +8,8 @@
                 "${workspaceFolder}/ext/glad/include",
                 "${env:PHYSX_DIR}/physx/include",
                 "${env:PHYSX_DIR}/pxshared/include",
-                "${env:GLFW_DIR}/include"
+                "${env:GLFW_DIR}/include",
+                "${env:GLM_INCLUDE_DIR}"
             ],
             "defines": [],
             "macFrameworkPath": ["/System/Library/Frameworks", "/Library/Frameworks"],

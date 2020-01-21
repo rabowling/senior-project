@@ -22,22 +22,41 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -pedantic")
 
 # Add required frameworks for PhysX.
 set(PHYSX_DIR "$ENV{PHYSX_DIR}")
-add_definitions(-DNDEBUG)
-include_directories("${PHYSX_DIR}/physx/include" "${PHYSX_DIR}/pxshared/include")
-link_directories("${PHYSX_DIR}/physx/bin/mac.x86_64/release")
+if (PHYSX_DIR)
+    add_definitions(-DNDEBUG)
+    include_directories("${PHYSX_DIR}/physx/include" "${PHYSX_DIR}/pxshared/include")
+    link_directories("${PHYSX_DIR}/physx/bin/mac.x86_64/release")
+else()
+    message(FATAL_ERROR "PhysX not found")
+endif()
 
 # Add required frameworks for GLFW.
 set(GLFW_DIR "$ENV{GLFW_DIR}")
-message(STATUS "GLFW path: ${GLFW_DIR}")
-option(GLFW_BUILD_EXAMPLES "GLFW_BUILD_EXAMPLES" OFF)
-option(GLFW_BUILD_TESTS "GLFW_BUILD_TESTS" OFF)
-option(GLFW_BUILD_DOCS "GLFW_BUILD_DOCS" OFF)
-if(CMAKE_BUILD_TYPE MATCHES Release)
-    add_subdirectory(${GLFW_DIR} ${GLFW_DIR}/release)
+if (GLFW_DIR)
+    message(STATUS "GLFW path: ${GLFW_DIR}")
+    option(GLFW_BUILD_EXAMPLES "GLFW_BUILD_EXAMPLES" OFF)
+    option(GLFW_BUILD_TESTS "GLFW_BUILD_TESTS" OFF)
+    option(GLFW_BUILD_DOCS "GLFW_BUILD_DOCS" OFF)
+    if(CMAKE_BUILD_TYPE MATCHES Release)
+        add_subdirectory(${GLFW_DIR} ${GLFW_DIR}/release)
+    else()
+        add_subdirectory(${GLFW_DIR} ${GLFW_DIR}/debug)
+    endif()
+    include_directories(${GLFW_DIR}/include)
 else()
-    add_subdirectory(${GLFW_DIR} ${GLFW_DIR}/debug)
+    message(FATAL_ERROR "GLFW not found")
 endif()
-include_directories(${GLFW_DIR}/include)
+
+# Add GLM
+# Get the GLM environment variable. Since GLM is a header-only library, we
+# just need to add it to the include directory.
+set(GLM_INCLUDE_DIR "$ENV{GLM_INCLUDE_DIR}")
+if (GLM_INCLUDE_DIR)
+    include_directories(${GLM_INCLUDE_DIR})
+    message(STATUS "GLM include path: ${GLM_INCLUDE_DIR}")
+else()
+    message(FATAL_ERROR "GLM not found")
+endif()
 
 # Set the executable.
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS})
