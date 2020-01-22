@@ -25,6 +25,7 @@ ShaderManager shaderManager;
 Player *player;
 
 PxRigidDynamic *gBox = NULL;
+PxRigidDynamic *gBox2 = NULL;
 PxRigidStatic *gGroundPlane = NULL;
 
 WindowManager *windowManager;
@@ -75,6 +76,13 @@ void render() {
         M->scale(2);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
         boxShape->draw(shaderManager.getActive());
+    M->popMatrix();
+    M->pushMatrix();
+        t = gBox2->getGlobalPose();
+        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
+        M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        boxShape->draw(shaderManager.getActive());
         shaderManager.unbind();
     M->popMatrix();
     M->pushMatrix();
@@ -117,11 +125,18 @@ void initGeom(std::string resourceDirectory) {
 
     // Physics box
     PxShape *shape = physics.getPhysics()->createShape(PxBoxGeometry(2, 2, 2), *material);
-    gBox = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(10, 10, 0)));
+    gBox = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(-3, 10, -20)));
     gBox->attachShape(*shape);
     PxRigidBodyExt::updateMassAndInertia(*gBox, 10.0f);
     physics.getScene()->addActor(*gBox);
     shape->release();
+
+    PxShape *shape2 = physics.getPhysics()->createShape(PxBoxGeometry(1, 1, 1), *material);
+    gBox2 = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(3, 10, -10)));
+    gBox2->attachShape(*shape2);
+    PxRigidBodyExt::updateMassAndInertia(*gBox2, 10.0f);
+    physics.getScene()->addActor(*gBox2);
+    shape2->release();
 }
 
 int main() {

@@ -1,5 +1,6 @@
 #include "Player.h"
 #include <iostream>
+#include "Utils.h"
 
 using namespace std;
 using namespace physx;
@@ -46,48 +47,56 @@ void Player::update(float dt) {
 
     // Move character controller
     direction = ((direction * fSpeed) + (right * sSpeed)) * dt;
+    direction.y += gravity * dt;
     mController->move(direction, 0.0f, dt, NULL, NULL);
 
-    // Check for mouse down
-    if (glfwGetMouseButton(mWindowManager->getHandle(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !isCasting) {
-        PxRaycastBuffer hit;
-        bool status;
-        PxExtendedVec3 pos;
-        PxVec3 *upForce = new PxVec3(0, 10.0f, 0);
-        PxReal maxDist = 50.0;
+    // Check for picking up item
+    bool pressedE = false;
+    if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_E) == GLFW_PRESS && !pressingE) {
+        pressingE = true;
+        pressedE = true;
+    }
+    else if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_E) == GLFW_RELEASE && pressingE) {
+        pressingE = false;
+    }
 
-        isCasting = true; // debounce variable
+    if (pressedE) {
+        if (!heldItem) {
+            PxRaycastBuffer hit;
+            bool status;
+            PxExtendedVec3 pos;
+            PxVec3 *upForce = new PxVec3(0, 10.0f, 0);
+            PxReal maxDist = 50.0;
 
-        // Calculate origin and direction vectors
-        pos = mController->getPosition();
-        origin = PxVec3(pos.x, pos.y, pos.z);
-        unitDir = PxExtendedVec3(lookAt.x, lookAt.y, lookAt.z) - mController->getPosition();
-        unitDir.normalize();
-        origin += unitDir;
+            // Calculate origin and direction vectors
+            pos = mController->getPosition();
+            origin = PxVec3(pos.x, pos.y, pos.z);
+            unitDir = PxExtendedVec3(lookAt.x, lookAt.y, lookAt.z) - mController->getPosition();
+            unitDir.normalize();
+            origin += unitDir;
 
-        // Perform raycast
-        status = mScene->raycast(origin, unitDir, maxDist, hit);
-        if (status) {
-            if (hit.block.actor->is<PxRigidBody>()) {
-                currentTarget = static_cast<PxRigidBody *>(hit.block.actor);
-                lastLocation = hit.block.position;
+            // Perform raycast
+            status = mScene->raycast(origin, unitDir, maxDist, hit);
+            if (status) {
+                if (hit.block.actor->is<PxRigidBody>()) {
+                    heldItem = static_cast<PxRigidBody *>(hit.block.actor);
+                    heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
+                }
             }
+        }
+        else {
+            heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, false);
+            heldItem = NULL;
         }
     }
 
-    // Check for mouse up
-    if (glfwGetMouseButton(mWindowManager->getHandle(), GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE && isCasting) {
-        isCasting = false;
-        currentTarget = NULL;
-    }
+    // Move held item in front of player
+    if (heldItem != NULL) {
+        float holdDistance = 5.f;
+        PxVec3 targetLocation = glm2px(mCamera->eye + holdDistance * (lookAt - mCamera->eye));
+        PxVec3 vectorToTargetLocation = targetLocation - heldItem->getGlobalPose().p;
 
-    // Pick up block if currentTarget is not null (in progress)
-    if (currentTarget != NULL) {
-        PxVec3 targetLocation = origin + (5.0f * unitDir);
-        PxVec3 vectorToTargetLocation = targetLocation - lastLocation;
-        vectorToTargetLocation.normalize();
-        currentTarget->addForce(vectorToTargetLocation * 5.0f, PxForceMode::eVELOCITY_CHANGE, true);
-        lastLocation += vectorToTargetLocation * 5.0f * dt;
+        heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);
     }
 }
 
