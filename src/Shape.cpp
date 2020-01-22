@@ -118,7 +118,7 @@ void Shape::init()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void Shape::draw(const shared_ptr<Program> prog) const
+void Shape::draw(const Program *prog) const
 {
 	int h_pos, h_nor, h_tex;
 	h_pos = h_nor = h_tex = -1;

@@ -14,43 +14,19 @@
 #include "WindowManager.h"
 #include "Physics.h"
 #include "Camera.h"
+#include "ShaderManager.h"
 
 using namespace physx;
 
 Physics physics;
 Camera camera;
+ShaderManager shaderManager;
 
 PxRigidDynamic *gBox = NULL;
 PxRigidStatic *gGroundPlane = NULL;
 
 WindowManager *windowManager;
-std::shared_ptr<Program> shader;
 std::shared_ptr<Shape> boxShape;
-
-void initShaders(std::string resourceDirectory) {
-    shader = std::make_shared<Program>();
-    shader->setVerbose(true);
-    shader->setShaderNames(
-        resourceDirectory + "/mat_vert.glsl",
-        resourceDirectory + "/mat_frag.glsl");
-    if (! shader->init())
-    {
-        std::cerr << "One or more shaders failed to compile... exiting!" << std::endl;
-        exit(1);
-    }
-    shader->addUniform("P");
-    shader->addUniform("V");
-    shader->addUniform("M");
-    shader->addUniform("MatAmb");
-    shader->addUniform("MatDif");
-    shader->addUniform("MatSpec");
-    shader->addUniform("Shine");
-    shader->addUniform("dirLightDir");
-    shader->addUniform("dirLightColor");
-    shader->addUniform("viewPos");
-    shader->addAttribute("vertPos");
-    shader->addAttribute("vertNor");
-}
 
 void render() {
     int width, height;
@@ -80,25 +56,25 @@ void render() {
         M->loadIdentity();
 
         // Draw spiders
-        shader->bind();
-        glUniform3f(shader->getUniform("dirLightDir"), 0, 1, 1);
-		glUniform3f(shader->getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shader->getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
-        glUniform3f(shader->getUniform("MatDif"), 0.396, 0.74151, 0.69102);
-        glUniform3f(shader->getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
-        glUniform1f(shader->getUniform("Shine"), 12.8);
-        glUniform3f(shader->getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
-        glUniformMatrix4fv(shader->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-        glUniformMatrix4fv(shader->getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
+        shaderManager.bind("mat");
+        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
+		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
+        glUniform3f(shaderManager.getUniform("MatDif"), 0.396, 0.74151, 0.69102);
+        glUniform3f(shaderManager.getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
+        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
+        glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
+        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
 
         PxTransform t = gBox->getGlobalPose();
         M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
         M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         M->scale(2);
-        glUniformMatrix4fv(shader->getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        boxShape->draw(shader);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        boxShape->draw(shaderManager.getActive());
 
-        shader->unbind();
+        shaderManager.unbind();
 
     M->popMatrix();
 }
@@ -131,7 +107,7 @@ int main() {
     camera.init(windowManager, glm::vec3(15, 15, 15), glm::vec3(0, 0, -1));
 
     initGeom("../resources");
-    initShaders("../shaders");
+    shaderManager.loadShaders("../shaders");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);

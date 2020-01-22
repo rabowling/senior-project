@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cassert>
 #include <fstream>
+#include <vector>
 
 #include "GLSL.h"
 
@@ -92,6 +93,8 @@ bool Program::init()
 		return false;
 	}
 
+	findUniformsAndAttributes();
+
 	return true;
 }
 
@@ -141,4 +144,33 @@ GLint Program::getUniform(const std::string &name) const
 		return -1;
 	}
 	return uniform->second;
+}
+
+void Program::findUniformsAndAttributes() {
+	GLint numActiveAttribs = 0;
+	GLint numActiveUniforms = 0;
+	glGetProgramiv(pid, GL_ACTIVE_ATTRIBUTES, &numActiveAttribs);
+	glGetProgramiv(pid, GL_ACTIVE_UNIFORMS, &numActiveUniforms);
+
+	// get attributes
+	std::vector<GLchar> nameData(256);
+	for (int attrib = 0; attrib < numActiveAttribs; ++attrib) {
+		GLint arraySize = 0;
+		GLenum type = 0;
+		GLsizei actualLength = 0;
+		glGetActiveAttrib(pid, attrib, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
+		std::string name((char*)&nameData[0], actualLength);
+		addAttribute(name);
+	}
+
+	// get uniforms
+	for(int unif = 0; unif < numActiveUniforms; ++unif)
+	{
+		GLint arraySize = 0;
+		GLenum type = 0;
+		GLsizei actualLength = 0;
+		glGetActiveUniform(pid, unif, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
+		std::string name((char*)&nameData[0], actualLength);
+		addUniform(name);
+	}
 }

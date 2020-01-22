@@ -37,6 +37,7 @@ protected:
 
 private:
 
+	void findUniformsAndAttributes();
 	GLuint pid = 0;
 	std::map<std::string, GLint> attributes;
 	std::map<std::string, GLint> uniforms;

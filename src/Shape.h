@@ -20,7 +20,7 @@ public:
 	void loadMesh(const std::string &meshName);
 	void saveObj(const std::string &fileName);
 	void init();
-	void draw(const std::shared_ptr<Program> prog) const;
+	void draw(const Program *prog) const;
 
 private:
 
