@@ -14,6 +14,7 @@ void Camera::update(float dt)
     // Common mouse movement
     double xpos, ypos;
     int width, height;
+    physx::PxExtendedVec3 pos;
     glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
     glfwGetCursorPos(windowManager->getHandle(), &xpos, &ypos);
     double dx = xpos - prevCursorPosX;
@@ -23,7 +24,17 @@ void Camera::update(float dt)
     double radPerPx = M_PI / height;
     yaw += dx * radPerPx;
     pitch = std::max(std::min(pitch + dy * radPerPx, radians(80.0)), -radians(80.0));
+    
+    pos = mController->getPosition();
+    eye.x = pos.x;
+    eye.y = pos.y;
+    eye.z = pos.z;
 
+    lookAtPoint.x = eye.x + cos(pitch) * sin(yaw);
+	lookAtPoint.y = eye.y + sin(pitch);
+	lookAtPoint.z = eye.z + cos(pitch) * cos(M_PI - yaw);
+
+    /*
     if (mode == FREE_CAM)
     {
         // Translational movement
@@ -73,7 +84,7 @@ void Camera::update(float dt)
     else if (mode == FOLLOW_CAM)
     {
         // nothing
-    }
+    } */
 }
 
 void Camera::lookAt(shared_ptr<MatrixStack> V)
@@ -88,12 +99,13 @@ void Camera::lookAt(shared_ptr<MatrixStack> V)
     }
 }
 
-void Camera::init(WindowManager *windowManager, vec3 pos, vec3 lookDir)
+void Camera::init(WindowManager *windowManager, glm::vec3 pos, glm::vec3 lookDir, physx::PxController *controller)
 {
     this->windowManager = windowManager;
     glfwGetCursorPos(windowManager->getHandle(), &prevCursorPosX, &prevCursorPosY);
     eye = pos;
     lookAtPoint = pos + lookDir;
+    mController = controller;
 }
 
 void Camera::toggleMode()

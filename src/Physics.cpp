@@ -31,6 +31,8 @@ void Physics::init() {
         std::cout << "createScene failed" << std::endl;
         exit(1);
     }
+
+    mManager = PxCreateControllerManager(*mScene);
 }
 
 PxScene *Physics::getScene() {
@@ -39,4 +41,8 @@ PxScene *Physics::getScene() {
 
 PxPhysics *Physics::getPhysics() {
     return mPhysics;
+}
+
+PxControllerManager *Physics::getControllerManager() {
+    return mManager;
 }

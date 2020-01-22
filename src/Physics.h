@@ -8,6 +8,7 @@ public:
     void init();
     physx::PxScene *getScene();
     physx::PxPhysics *getPhysics();
+    physx::PxControllerManager *getControllerManager();
 private:
     physx::PxDefaultAllocator mAllocator;
     physx::PxDefaultErrorCallback mErrorCallback;
@@ -15,4 +16,5 @@ private:
     physx::PxPhysics *mPhysics;
     physx::PxDefaultCpuDispatcher *mDispatcher;
     physx::PxScene *mScene;
+    physx::PxControllerManager *mManager;
 };

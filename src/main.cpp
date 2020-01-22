@@ -15,18 +15,21 @@
 #include "Physics.h"
 #include "Camera.h"
 #include "ShaderManager.h"
+#include "Player.h"
 
 using namespace physx;
 
 Physics physics;
 Camera camera;
 ShaderManager shaderManager;
+Player *player;
 
 PxRigidDynamic *gBox = NULL;
 PxRigidStatic *gGroundPlane = NULL;
 
 WindowManager *windowManager;
 std::shared_ptr<Shape> boxShape;
+std::shared_ptr<Shape> planeShape;
 
 void render() {
     int width, height;
@@ -38,7 +41,6 @@ void render() {
     // Clear framebuffer.
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(.12f, .34f, .56f, 1.0f);
-
 
     /* Leave this code to just draw the meshes alone */
     float aspect = width/(float)height;
@@ -73,9 +75,27 @@ void render() {
         M->scale(2);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
         boxShape->draw(shaderManager.getActive());
-
         shaderManager.unbind();
+    M->popMatrix();
+    M->pushMatrix();
+        shaderManager.bind("mat");
+        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
+		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0.8);
+        glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0.8);
+        glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0.8);
+        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
+        glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
+        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
 
+        t = gGroundPlane->getGlobalPose();
+        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
+        //M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
+        M->scale(100);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        planeShape->draw(shaderManager.getActive());
+        shaderManager.unbind();
     M->popMatrix();
 }
 
@@ -84,6 +104,11 @@ void initGeom(std::string resourceDirectory) {
     boxShape = std::make_shared<Shape>();
     boxShape->loadMesh(resourceDirectory + "/cube.obj");
     boxShape->init();
+
+    // Plane geometry
+    planeShape = std::make_shared<Shape>();
+    planeShape->loadMesh(resourceDirectory + "/plane.obj");
+    planeShape->init();
 
     // Physics ground plane
     PxMaterial *material = physics.getPhysics()->createMaterial(0.5f, 0.5f, 0.6f);
@@ -104,7 +129,8 @@ int main() {
     windowManager = new WindowManager();
     windowManager->init(512, 512);
     physics.init();
-    camera.init(windowManager, glm::vec3(15, 15, 15), glm::vec3(0, 0, -1));
+    player = new Player(windowManager, &physics, &camera);
+    camera.init(windowManager, glm::vec3(15, 15, 15), glm::vec3(0, 0, -1), physics.getControllerManager()->getController(0));
 
     initGeom("../resources");
     shaderManager.loadShaders("../shaders");
@@ -115,6 +141,7 @@ int main() {
     while (!glfwWindowShouldClose(windowManager->getHandle())) {
         camera.update(1.0f / 60.0f);
         render();
+        player->update(1.0f / 60.0f);
         physics.getScene()->simulate(1.0f / 60.0f);
         physics.getScene()->fetchResults(true);
         glfwSwapBuffers(windowManager->getHandle());

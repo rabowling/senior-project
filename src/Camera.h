@@ -4,6 +4,7 @@
 #include "MatrixStack.h"
 #include <memory>
 #include <glm/glm.hpp>
+#include <PxPhysicsAPI.h>
 
 enum CameraMode { FREE_CAM, FOLLOW_CAM };
 
@@ -12,12 +13,13 @@ class Camera
 public:
     void lookAt(std::shared_ptr<MatrixStack> V);
     void update(float dt);
-    void init(WindowManager *windowManager, glm::vec3 pos, glm::vec3 lookDir);
+    void init(WindowManager *windowManager, glm::vec3 pos, glm::vec3 lookDir, physx::PxController *controller);
     void toggleMode();
     void scrollCallback(double deltaY);
 
     glm::vec3 eye;
     double radius = 10;
+    glm::vec3 lookAtPoint;
     
 private:
     WindowManager *windowManager;
@@ -25,9 +27,9 @@ private:
     double prevCursorPosY;
     double pitch = 0;
     double yaw = 0;
-    glm::vec3 lookAtPoint;
     glm::vec3 upVec = glm::vec3(0, 1, 0);
     CameraMode mode = FREE_CAM;
+    physx::PxController *mController;
 
     // When in free cam
     float flyingSpeed = 5;
