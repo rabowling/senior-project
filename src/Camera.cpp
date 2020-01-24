@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <memory>
 #include <iostream>
+#include "Application.h"
 
 using namespace std;
 using namespace glm;
@@ -99,13 +100,13 @@ void Camera::lookAt(shared_ptr<MatrixStack> V)
     }
 }
 
-void Camera::init(WindowManager *windowManager, glm::vec3 pos, glm::vec3 lookDir, physx::PxController *controller)
+void Camera::init(glm::vec3 pos, glm::vec3 lookDir)
 {
-    this->windowManager = windowManager;
+    this->windowManager = &app.windowManager;
     glfwGetCursorPos(windowManager->getHandle(), &prevCursorPosX, &prevCursorPosY);
     eye = pos;
     lookAtPoint = pos + lookDir;
-    mController = controller;
+    mController = app.physics.getControllerManager()->getController(0);
 }
 
 void Camera::toggleMode()

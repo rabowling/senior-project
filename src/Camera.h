@@ -13,7 +13,7 @@ public:
     enum CameraMode { FREE_CAM, FOLLOW_CAM };
     void lookAt(std::shared_ptr<MatrixStack> V);
     void update(float dt);
-    void init(WindowManager *windowManager, glm::vec3 pos, glm::vec3 lookDir, physx::PxController *controller);
+    void init(glm::vec3 pos, glm::vec3 lookDir);
     void toggleMode();
     void scrollCallback(double deltaY);
 

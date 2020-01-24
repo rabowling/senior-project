@@ -5,8 +5,8 @@
 
 class Player {
     public:
-        Player(WindowManager *windowManager, Physics *physics, Camera *camera);
         void update(float dt);
+        void init();
         
     private:
         physx::PxController *mController;

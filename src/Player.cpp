@@ -1,24 +1,25 @@
 #include "Player.h"
 #include <iostream>
 #include "Utils.h"
+#include "Application.h"
 
 using namespace std;
 using namespace physx;
 
-Player::Player(WindowManager *windowManager, Physics *physics, Camera *camera) {
+void Player::init() {
     PxCapsuleControllerDesc desc;
 
     // We can tweak these as necessary
     desc.radius = 1.0f;
     desc.height = 3.0f;
     desc.position = PxExtendedVec3(0,4,0);
-    desc.material = physics->getPhysics()->createMaterial(0.5f,0.5f,0.6f);
+    desc.material = app.physics.getPhysics()->createMaterial(0.5f,0.5f,0.6f);
 
-    mController = physics->getControllerManager()->createController(desc);
-    mWindowManager = windowManager;
+    mController = app.physics.getControllerManager()->createController(desc);
+    mWindowManager = &app.windowManager;
     velocity = PxVec3(0);
-    mCamera = camera;
-    mScene = physics->getScene();
+    mCamera = &app.camera;
+    mScene = app.physics.getScene();
 }
 
 void Player::update(float dt) {
