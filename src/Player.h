@@ -19,6 +19,8 @@ class Player {
         physx::PxVec3 lastLocation;
         float gravity = -9.8f;
         float mWalkSpeed = 5.0f;
-        bool isJumping = false;
         physx::PxRigidBody *heldItem = NULL;
+        bool isJumping = false;
+        float jumpTime;
+        float jumpSpeed = 10;
 };

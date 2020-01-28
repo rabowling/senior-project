@@ -3,6 +3,8 @@
 #include "Utils.h"
 #include "Application.h"
 #include "Controls.h"
+#include <PxPhysicsAPI.h>
+#include <cmath>
 
 using namespace std;
 using namespace physx;
@@ -48,9 +50,28 @@ void Player::update(float dt) {
     }
 
     // Move character controller
-    direction = ((direction * fSpeed) + (right * sSpeed)) * dt;
-    direction.y += gravity * dt;
-    mController->move(direction, 0.0f, dt, NULL, NULL);
+    PxVec3 displacement = ((direction * fSpeed) + (right * sSpeed)) * dt;
+
+    // Handle jumping
+    PxControllerState state;
+    mController->getState(state);
+    if (state.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN) {
+        if (isJumping) {
+            isJumping = false;
+        }
+        else if (app.controls.isPressed(Controls::JUMP)) {
+            isJumping = true;
+            jumpTime = 0;
+        }
+    }
+    if (isJumping) {
+        jumpTime += dt;
+        displacement.y += (jumpSpeed + gravity * jumpTime) * dt;
+    }
+    else {
+        displacement.y += gravity * dt;
+    }
+    mController->move(displacement, 0.0f, dt, NULL, NULL);
 
     // Check for picking up item
     if (app.controls.isPressed(Controls::USE)) {
