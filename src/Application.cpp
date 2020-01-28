@@ -14,6 +14,7 @@ void Application::run() {
     physics.init();
     player.init();
     camera.init(glm::vec3(15, 15, 15), glm::vec3(0, 0, -1));
+    controls.init();
 
     initGeom("../resources");
     shaderManager.loadShaders("../shaders");
@@ -22,6 +23,7 @@ void Application::run() {
     glEnable(GL_CULL_FACE);
 
     while (!glfwWindowShouldClose(windowManager.getHandle())) {
+        controls.update();
         camera.update(1.0f / 60.0f);
         render(1.0f / 60.0f);
         player.update(1.0f / 60.0f);

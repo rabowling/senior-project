@@ -7,6 +7,7 @@
 #include "ShaderManager.h"
 #include "WindowManager.h"
 #include "Player.h"
+#include "Controls.h"
 #include <string>
 
 class Application
@@ -17,6 +18,7 @@ public:
     ShaderManager shaderManager;
     WindowManager windowManager;
     Player player;
+    Controls controls;
     
     float physicsStep;
     float deltaTime;

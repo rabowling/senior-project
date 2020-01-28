@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Utils.h"
 #include "Application.h"
+#include "Controls.h"
 
 using namespace std;
 using namespace physx;
@@ -33,16 +34,16 @@ void Player::update(float dt) {
 
     float fSpeed = 0.0f; // forward speed
     float sSpeed = 0.0f; // sideways speed
-    if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_W) == GLFW_PRESS) {
+    if (app.controls.isHeld(Controls::FORWARD)) {
         fSpeed += mWalkSpeed;
     }
-    if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_S) == GLFW_PRESS) {
+    if (app.controls.isHeld(Controls::BACKWARD)) {
         fSpeed -= mWalkSpeed;
     }
-    if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_D) == GLFW_PRESS) {
+    if (app.controls.isHeld(Controls::RIGHT)) {
         sSpeed += mWalkSpeed;
     }
-    if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_A) == GLFW_PRESS) {
+    if (app.controls.isHeld(Controls::LEFT)) {
         sSpeed -= mWalkSpeed;
     }
 
@@ -52,16 +53,7 @@ void Player::update(float dt) {
     mController->move(direction, 0.0f, dt, NULL, NULL);
 
     // Check for picking up item
-    bool pressedE = false;
-    if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_E) == GLFW_PRESS && !pressingE) {
-        pressingE = true;
-        pressedE = true;
-    }
-    else if (glfwGetKey(mWindowManager->getHandle(), GLFW_KEY_E) == GLFW_RELEASE && pressingE) {
-        pressingE = false;
-    }
-
-    if (pressedE) {
+    if (app.controls.isPressed(Controls::USE)) {
         if (!heldItem) {
             PxRaycastBuffer hit;
             bool status;

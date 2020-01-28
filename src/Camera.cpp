@@ -17,14 +17,8 @@ void Camera::update(float dt)
     int width, height;
     physx::PxExtendedVec3 pos;
     glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
-    glfwGetCursorPos(windowManager->getHandle(), &xpos, &ypos);
-    double dx = xpos - prevCursorPosX;
-    double dy = -(ypos - prevCursorPosY);
-    prevCursorPosX = xpos;
-    prevCursorPosY = ypos;
-    double radPerPx = M_PI / height;
-    yaw += dx * radPerPx;
-    pitch = std::max(std::min(pitch + dy * radPerPx, radians(80.0)), -radians(80.0));
+    yaw -= app.controls.getMouseDeltaX();
+    pitch = std::max(std::min(pitch + app.controls.getMouseDeltaY(), radians(80.0)), -radians(80.0));
     
     pos = mController->getPosition();
     eye.x = pos.x;
@@ -103,7 +97,6 @@ void Camera::lookAt(shared_ptr<MatrixStack> V)
 void Camera::init(glm::vec3 pos, glm::vec3 lookDir)
 {
     this->windowManager = &app.windowManager;
-    glfwGetCursorPos(windowManager->getHandle(), &prevCursorPosX, &prevCursorPosY);
     eye = pos;
     lookAtPoint = pos + lookDir;
     mController = app.physics.getControllerManager()->getController(0);

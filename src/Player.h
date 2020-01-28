@@ -20,6 +20,5 @@ class Player {
         float gravity = -9.8f;
         float mWalkSpeed = 5.0f;
         bool isJumping = false;
-        bool pressingE = false;
         physx::PxRigidBody *heldItem = NULL;
 };

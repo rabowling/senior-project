@@ -23,8 +23,6 @@ public:
     
 private:
     WindowManager *windowManager;
-    double prevCursorPosX;
-    double prevCursorPosY;
     double pitch = 0;
     double yaw = 0;
     glm::vec3 upVec = glm::vec3(0, 1, 0);
