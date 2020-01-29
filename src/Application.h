@@ -27,6 +27,8 @@ public:
     physx::PxRigidDynamic *gBox2 = NULL;
     physx::PxRigidStatic *gGroundPlane = NULL;
     physx::PxRigidStatic *gButton = NULL;
+    bool buttonPressed = false;
+
 
     std::shared_ptr<Shape> boxShape;
     std::shared_ptr<Shape> planeShape;

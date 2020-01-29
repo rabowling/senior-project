@@ -3,6 +3,7 @@
 #include <PxPhysicsAPI.h>
 #include <glm/glm.hpp>
 #include <string>
+#include <iostream>
 #include "Shape.h"
 
 using namespace physx;
@@ -94,7 +95,11 @@ void Application::render(float dt) {
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0);
-        glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0);
+        if (buttonPressed) {
+            glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0, 0);
+        } else {
+            glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0);
+        }
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
         glUniform1f(shaderManager.getUniform("Shine"), 12.8);
         glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
