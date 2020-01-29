@@ -93,6 +93,24 @@ void Application::render(float dt) {
         shaderManager.bind("mat");
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0);
+        glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0);
+        glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
+        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
+        glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
+        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
+        t = gButton->getGlobalPose();
+        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
+        M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        cylinderShape->draw(shaderManager.getActive());
+        shaderManager.unbind();
+    M->popMatrix();
+    M->pushMatrix();
+        shaderManager.bind("mat");
+        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
+		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0.8);
         glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0.8);
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0.8);
@@ -122,6 +140,11 @@ void Application::initGeom(std::string resourceDirectory) {
     planeShape->loadMesh(resourceDirectory + "/plane.obj");
     planeShape->init();
 
+    // Cylinder geometry
+    cylinderShape = std::make_shared<Shape>();
+    cylinderShape->loadMesh(resourceDirectory + "/cylinder.obj");
+    cylinderShape->init();
+
     // Physics ground plane
     PxMaterial *material = physics.getPhysics()->createMaterial(0.5f, 0.5f, 0.6f);
     gGroundPlane = PxCreatePlane(*(physics.getPhysics()), PxPlane(0, 1, 0, 0), *material);
@@ -141,4 +164,10 @@ void Application::initGeom(std::string resourceDirectory) {
     PxRigidBodyExt::updateMassAndInertia(*gBox2, 10.0f);
     physics.getScene()->addActor(*gBox2);
     shape2->release();
+
+    PxShape *shape3 = physics.getPhysics()->createShape(PxBoxGeometry(1, 0.4, 1), *material);
+    gButton = physics.getPhysics()->createRigidStatic(PxTransform(PxVec3(-3, 0.4, 5)));
+    gButton->attachShape(*shape3);
+    physics.getScene()->addActor(*gButton);
+    shape3->release();
 }

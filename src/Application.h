@@ -26,9 +26,11 @@ public:
     physx::PxRigidDynamic *gBox = NULL;
     physx::PxRigidDynamic *gBox2 = NULL;
     physx::PxRigidStatic *gGroundPlane = NULL;
+    physx::PxRigidStatic *gButton = NULL;
 
     std::shared_ptr<Shape> boxShape;
     std::shared_ptr<Shape> planeShape;
+    std::shared_ptr<Shape> cylinderShape;
 
     void run();
     void render(float dt);
