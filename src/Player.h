@@ -13,14 +13,12 @@ class Player {
         physx::PxScene *mScene;
         Camera *mCamera;
         WindowManager *mWindowManager;
-        physx::PxVec3 velocity;
         physx::PxVec3 origin;
         physx::PxVec3 unitDir;
         physx::PxVec3 lastLocation;
+        physx::PxVec3 velocity;
         float gravity = -9.8f;
         float mWalkSpeed = 5.0f;
         physx::PxRigidBody *heldItem = NULL;
-        bool isJumping = false;
-        float jumpTime;
         float jumpSpeed = 10;
 };

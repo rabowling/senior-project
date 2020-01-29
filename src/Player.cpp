@@ -56,22 +56,16 @@ void Player::update(float dt) {
     PxControllerState state;
     mController->getState(state);
     if (state.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN) {
-        if (isJumping) {
-            isJumping = false;
+        velocity *= 0.9f;
+        if (app.controls.isPressed(Controls::JUMP)) {
+            velocity.y = jumpSpeed;
         }
-        else if (app.controls.isPressed(Controls::JUMP)) {
-            isJumping = true;
-            jumpTime = 0;
-        }
-    }
-    if (isJumping) {
-        jumpTime += dt;
-        displacement.y += (jumpSpeed + gravity * jumpTime) * dt;
     }
     else {
-        displacement.y += gravity * dt;
+        velocity.y += gravity * dt;
     }
-    mController->move(displacement, 0.0f, dt, NULL, NULL);
+    displacement += velocity * dt;
+    mController->move(displacement, 0.01f, dt, NULL, NULL);
 
     // Check for picking up item
     if (app.controls.isPressed(Controls::USE)) {
