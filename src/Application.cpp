@@ -29,6 +29,7 @@ void Application::run() {
         render(1.0f / 60.0f);
         player.update(1.0f / 60.0f);
         physics.getScene()->simulate(1.0f / 60.0f);
+        stepCount++;
         physics.getScene()->fetchResults(true);
         glfwSwapBuffers(windowManager.getHandle());
         glfwPollEvents();
@@ -151,7 +152,7 @@ void Application::initGeom(std::string resourceDirectory) {
     cylinderShape->init();
 
     // Physics ground plane
-    PxMaterial *material = physics.getPhysics()->createMaterial(0.5f, 0.5f, 0.6f);
+    PxMaterial *material = physics.getPhysics()->createMaterial(0.3f, 0.3f, 0.3f);
     gGroundPlane = PxCreatePlane(*(physics.getPhysics()), PxPlane(0, 1, 0, 0), *material);
     physics.getScene()->addActor(*gGroundPlane);
 

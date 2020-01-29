@@ -3,11 +3,38 @@
 #include "Utils.h"
 #include "Application.h"
 #include "Controls.h"
+#include "Physics.h"
 #include <PxPhysicsAPI.h>
 #include <cmath>
 
 using namespace std;
 using namespace physx;
+
+void Player::onShapeHit(const PxControllerShapeHit &hit) {
+    if (hit.actor->is<PxRigidDynamic>()) {
+        // Push boxes
+        PxRigidDynamic *actor = static_cast<PxRigidDynamic *>(hit.actor);
+        PxVec3 point(hit.worldPos.x, hit.worldPos.y, hit.worldPos.z);
+        PxVec3 impulse = hit.dir;
+        PxVec3 deltaLinearVelocity;
+        PxVec3 deltaAngularVelocity;
+        PxRigidBodyExt::computeVelocityDeltaFromImpulse(*actor, actor->getGlobalPose(),
+            point, impulse, actor->getInvMass(), 1, deltaLinearVelocity, deltaAngularVelocity);
+        deltaLinearVelocity.y = 0;
+        deltaAngularVelocity.z = 0;
+        deltaAngularVelocity.x = 0;
+        actor->addForce(deltaLinearVelocity * 1000, PxForceMode::eVELOCITY_CHANGE);
+        actor->addTorque(deltaAngularVelocity * 10, PxForceMode::eVELOCITY_CHANGE);
+    }
+}
+
+void Player::onControllerHit(const PxControllersHit &hit) {
+
+}
+
+void Player::onObstacleHit(const PxControllerObstacleHit &hit) {
+
+}
 
 void Player::init() {
     PxCapsuleControllerDesc desc;
@@ -16,7 +43,8 @@ void Player::init() {
     desc.radius = 1.0f;
     desc.height = 3.0f;
     desc.position = PxExtendedVec3(0,4,0);
-    desc.material = app.physics.getPhysics()->createMaterial(0.5f,0.5f,0.6f);
+    desc.material = app.physics.getPhysics()->createMaterial(0.3f,0.3f,0.3f);
+    desc.reportCallback = this;
 
     mController = app.physics.getControllerManager()->createController(desc);
     mWindowManager = &app.windowManager;
@@ -62,7 +90,7 @@ void Player::update(float dt) {
         }
     }
     else {
-        velocity.y += gravity * dt;
+        velocity.y += GRAVITY * dt;
     }
     displacement += velocity * dt;
     mController->move(displacement, 0.01f, dt, NULL, NULL);

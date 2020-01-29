@@ -2,6 +2,8 @@
 
 #include <PxPhysicsAPI.h>
 
+#define GRAVITY -9.81
+
 class Physics : public physx::PxSimulationEventCallback
 {
 public:

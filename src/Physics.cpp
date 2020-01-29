@@ -38,7 +38,7 @@ void Physics::init() {
     }
 
     PxSceneDesc sceneDesc(mPhysics->getTolerancesScale());
-    sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+    sceneDesc.gravity = PxVec3(0.0f, GRAVITY, 0.0f);
     mDispatcher = PxDefaultCpuDispatcherCreate(2);
     if (!mDispatcher) {
         std::cout << "PxDefaultCpuDispatcherCreate failed" << std::endl;

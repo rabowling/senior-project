@@ -19,6 +19,8 @@ public:
     WindowManager windowManager;
     Player player;
     Controls controls;
+
+    long stepCount = 0;
     
     float physicsStep;
     float deltaTime;
@@ -29,12 +31,12 @@ public:
     physx::PxRigidStatic *gButton = NULL;
     bool buttonPressed = false;
 
-
     std::shared_ptr<Shape> boxShape;
     std::shared_ptr<Shape> planeShape;
     std::shared_ptr<Shape> cylinderShape;
 
     void run();
+private:
     void render(float dt);
     void initGeom(std::string resourceDirectory);
 };

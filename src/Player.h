@@ -2,12 +2,16 @@
 #include "Physics.h"
 #include "WindowManager.h"
 #include "Camera.h"
+#include <PxPhysicsAPI.h>
 
-class Player {
+class Player : public physx::PxUserControllerHitReport {
     public:
         void update(float dt);
         void init();
         
+        virtual void onShapeHit(const physx::PxControllerShapeHit &hit);
+        virtual void onControllerHit(const physx::PxControllersHit &hit);
+        virtual void onObstacleHit(const physx::PxControllerObstacleHit &hit);
     private:
         physx::PxController *mController;
         physx::PxScene *mScene;
@@ -17,7 +21,6 @@ class Player {
         physx::PxVec3 unitDir;
         physx::PxVec3 lastLocation;
         physx::PxVec3 velocity;
-        float gravity = -9.8f;
         float mWalkSpeed = 5.0f;
         physx::PxRigidBody *heldItem = NULL;
         float jumpSpeed = 10;
