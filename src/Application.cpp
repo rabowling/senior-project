@@ -139,10 +139,10 @@ void Application::render(float dt) {
     textureManager.bind("concrete", "Texture0");
     glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 	glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-    glUniform3f(shaderManager.getUniform("MatAmb"), 0.25, 0.20725, 0.20725);
-    glUniform3f(shaderManager.getUniform("MatDif"), 1, 0.829, 0.829);
-    glUniform3f(shaderManager.getUniform("MatSpec"), 0.296648, 0.296648, 0.296648);
-    glUniform1f(shaderManager.getUniform("Shine"), 11.264);
+    glUniform3f(shaderManager.getUniform("MatAmb"), 0.19225, 0.19225, 0.19225);
+    glUniform3f(shaderManager.getUniform("MatDif"), 0.50754, 0.50754, 0.50754);
+    glUniform3f(shaderManager.getUniform("MatSpec"), 0.508273, 0.508273, 0.508273);
+    glUniform1f(shaderManager.getUniform("Shine"), 51.2);
     glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
