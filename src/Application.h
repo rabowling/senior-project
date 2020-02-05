@@ -5,6 +5,7 @@
 #include "Physics.h"
 #include "Camera.h"
 #include "ShaderManager.h"
+#include "TextureManager.h"
 #include "WindowManager.h"
 #include "Player.h"
 #include "Controls.h"
@@ -18,6 +19,7 @@ public:
     Physics physics;
     Camera camera;
     ShaderManager shaderManager;
+    TextureManager textureManager;
     WindowManager windowManager;
     Player player;
     Controls controls;

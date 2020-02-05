@@ -13,7 +13,9 @@ std::vector<std::string> listDir(std::string dir) {
     std::vector<std::string> dirs;
 
     while ((entry = readdir(dp))) {
-        dirs.push_back(std::string(entry->d_name));
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            dirs.push_back(std::string(entry->d_name));
+        }
     }
 
     closedir(dp);

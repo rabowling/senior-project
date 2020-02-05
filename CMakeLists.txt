@@ -14,7 +14,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp" "ext/**.cpp" "ext/**.c")
 # We don't really need to include header and resource files to build, but it's
 # nice to have them show up in IDEs.
 file(GLOB_RECURSE HEADERS "src/*.h" "ext/**.h")
-include_directories("ext/glad/include" "ext/tiny_obj_loader")
+include_directories("ext/glad/include" "ext/tiny_obj_loader" "ext/stb_image")
 
 # OS specific options and libraries
 # Enable all pedantic warnings.

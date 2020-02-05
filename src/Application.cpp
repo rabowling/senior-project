@@ -19,6 +19,7 @@ void Application::run() {
 
     initGeom("../resources");
     shaderManager.loadShaders("../shaders");
+    textureManager.loadTextures("../resources/textures");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -61,11 +62,13 @@ void Application::render(float dt) {
     P->perspective(45.0f, aspect, 0.01f, 100.0f);
     camera.lookAt(V);
 
+    shaderManager.bind("tex");
+    textureManager.bind("concrete", "Texture0");
+
     M->pushMatrix();
         M->loadIdentity();
 
         // Draw spiders
-        shaderManager.bind("mat");
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
@@ -89,10 +92,8 @@ void Application::render(float dt) {
         M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
         boxShape->draw(shaderManager.getActive());
-        shaderManager.unbind();
     M->popMatrix();
     M->pushMatrix();
-        shaderManager.bind("mat");
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0);
@@ -111,7 +112,6 @@ void Application::render(float dt) {
         M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
         cylinderShape->draw(shaderManager.getActive());
-        shaderManager.unbind();
     M->popMatrix();
     /*M->pushMatrix();
         shaderManager.bind("mat");
@@ -135,20 +135,18 @@ void Application::render(float dt) {
     M->popMatrix(); */
 
     // Set up wall shader colors here
-    shaderManager.bind("mat");
     glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 	glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
     glUniform3f(shaderManager.getUniform("MatAmb"), 0.25, 0.20725, 0.20725);
     glUniform3f(shaderManager.getUniform("MatDif"), 1, 0.829, 0.829);
     glUniform3f(shaderManager.getUniform("MatSpec"), 0.296648, 0.296648, 0.296648);
-    glUniform1f(shaderManager.getUniform("Shine"), 0.088);
+    glUniform1f(shaderManager.getUniform("Shine"), 11.264);
     glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
     for (int i = 0; i < walls.size(); i++) {
         walls[i].draw(shaderManager, M);
     }
-    shaderManager.unbind();
 }
 
 void Application::initGeom(std::string resourceDirectory) {

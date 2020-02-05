@@ -6,6 +6,7 @@
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/ext/tiny_obj_loader",
                 "${workspaceFolder}/ext/glad/include",
+                "${workspaceFolder}/ext/stb_image",
                 "${env:PHYSX_DIR}/physx/include",
                 "${env:PHYSX_DIR}/pxshared/include",
                 "${env:GLFW_DIR}/include",

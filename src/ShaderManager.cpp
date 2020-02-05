@@ -45,8 +45,10 @@ void ShaderManager::loadShaders(std::string dir) {
 
 void ShaderManager::bind(std::string shaderName) {
     if (shaders.find(shaderName) != shaders.end()) {
-        active = &shaders[shaderName];
-        active->bind();
+        if (active != &shaders[shaderName]) {
+            active = &shaders[shaderName];
+            active->bind();
+        }
     }
     else {
         cout << "Shader not found: " << shaderName << endl;
