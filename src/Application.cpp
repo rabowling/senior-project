@@ -63,7 +63,7 @@ void Application::render(float dt) {
     camera.lookAt(V);
 
     shaderManager.bind("tex");
-    textureManager.bind("concrete", "Texture0");
+    textureManager.bind("marble", "Texture0");
 
     M->pushMatrix();
         M->loadIdentity();
@@ -96,11 +96,11 @@ void Application::render(float dt) {
     M->pushMatrix();
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
         if (buttonPressed) {
-            glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0, 0);
+            glUniform3f(shaderManager.getUniform("MatDif"), 1, 0, 0);
         } else {
-            glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0);
+            glUniform3f(shaderManager.getUniform("MatDif"), 1, 0.8, 0);
         }
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
         glUniform1f(shaderManager.getUniform("Shine"), 12.8);
@@ -135,6 +135,8 @@ void Application::render(float dt) {
     M->popMatrix(); */
 
     // Set up wall shader colors here
+    shaderManager.bind("wall");
+    textureManager.bind("concrete", "Texture0");
     glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 	glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
     glUniform3f(shaderManager.getUniform("MatAmb"), 0.25, 0.20725, 0.20725);

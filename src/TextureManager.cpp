@@ -19,7 +19,7 @@ void TextureManager::loadTextures(std::string dir) {
             texture.setFilename(dir + "/" + file);
             texture.init();
             texture.setUnit(1);
-            texture.setWrapModes(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+            texture.setWrapModes(GL_REPEAT, GL_REPEAT);
             textures[textureName] = texture;
             cout << "Loaded texture: " << textureName << endl;
         }
