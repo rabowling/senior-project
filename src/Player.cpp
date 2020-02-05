@@ -42,7 +42,7 @@ void Player::init() {
     // We can tweak these as necessary
     desc.radius = 1.0f;
     desc.height = 3.0f;
-    desc.position = PxExtendedVec3(0,4,0);
+    desc.position = PxExtendedVec3(20,4,45);
     desc.material = app.physics.getPhysics()->createMaterial(0.3f,0.3f,0.3f);
     desc.reportCallback = this;
 

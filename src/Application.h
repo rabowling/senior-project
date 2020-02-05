@@ -8,7 +8,9 @@
 #include "WindowManager.h"
 #include "Player.h"
 #include "Controls.h"
+#include "Wall.h"
 #include <string>
+#include <vector>
 
 class Application
 {
@@ -35,10 +37,13 @@ public:
     std::shared_ptr<Shape> planeShape;
     std::shared_ptr<Shape> cylinderShape;
 
+    std::vector<Wall *> walls;
+
     void run();
 private:
     void render(float dt);
     void initGeom(std::string resourceDirectory);
+    void makeWall(physx::PxVec3 pos, physx::PxVec3 size, physx::PxQuat rot);
 };
 
 extern Application app;

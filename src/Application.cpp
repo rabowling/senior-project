@@ -133,6 +133,22 @@ void Application::render(float dt) {
         planeShape->draw(shaderManager.getActive());
         shaderManager.unbind();
     M->popMatrix();
+
+    // Set up wall shader colors here
+    shaderManager.bind("mat");
+    glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
+	glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+    glUniform3f(shaderManager.getUniform("MatAmb"), 0.25, 0.20725, 0.20725);
+    glUniform3f(shaderManager.getUniform("MatDif"), 1, 0.829, 0.829);
+    glUniform3f(shaderManager.getUniform("MatSpec"), 0.296648, 0.296648, 0.296648);
+    glUniform1f(shaderManager.getUniform("Shine"), 0.088);
+    glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
+    for (int i = 0; i < walls.size(); i++) {
+        walls[i]->draw(shaderManager, M);
+    }
+    shaderManager.unbind();
 }
 
 void Application::initGeom(std::string resourceDirectory) {
@@ -176,4 +192,19 @@ void Application::initGeom(std::string resourceDirectory) {
     gButton->attachShape(*shape3);
     physics.getScene()->addActor(*gButton);
     shape3->release();
+
+    // Four outer walls
+    makeWall(PxVec3(25.0f, 4.0f, 0.0f), PxVec3(50.0f, 8.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+    makeWall(PxVec3(-25.0f, 4.0f, 0.0f), PxVec3(50.0f, 8.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+    makeWall(PxVec3(0.0f, 4.0f, -50.0f), PxVec3(25.0f, 8.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(0.0f, 4.0f, 50.0f), PxVec3(25.0f, 8.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
+
+    // Interior middle wall
+    makeWall(PxVec3(5.0f, 4.0f, -10.0f), PxVec3(40.0f, 8.0f, 0.5f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+}
+
+void Application::makeWall(PxVec3 pos, PxVec3 size, PxQuat rot) {
+    Wall *w = new Wall();
+    w->init(pos, size, rot, physics, boxShape);
+    walls.push_back(w);
 }
