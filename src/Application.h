@@ -37,7 +37,7 @@ public:
     std::shared_ptr<Shape> planeShape;
     std::shared_ptr<Shape> cylinderShape;
 
-    std::vector<Wall *> walls;
+    std::vector<Wall> walls;
 
     void run();
 private:

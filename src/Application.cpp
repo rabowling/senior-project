@@ -146,7 +146,7 @@ void Application::render(float dt) {
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
     for (int i = 0; i < walls.size(); i++) {
-        walls[i]->draw(shaderManager, M);
+        walls[i].draw(shaderManager, M);
     }
     shaderManager.unbind();
 }
@@ -204,7 +204,7 @@ void Application::initGeom(std::string resourceDirectory) {
 }
 
 void Application::makeWall(PxVec3 pos, PxVec3 size, PxQuat rot) {
-    Wall *w = new Wall();
-    w->init(pos, size, rot, physics, boxShape);
+    Wall w;
+    w.init(pos, size, rot, physics, boxShape);
     walls.push_back(w);
 }
