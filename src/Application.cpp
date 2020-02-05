@@ -113,7 +113,7 @@ void Application::render(float dt) {
         cylinderShape->draw(shaderManager.getActive());
         shaderManager.unbind();
     M->popMatrix();
-    M->pushMatrix();
+    /*M->pushMatrix();
         shaderManager.bind("mat");
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
@@ -132,7 +132,7 @@ void Application::render(float dt) {
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
         planeShape->draw(shaderManager.getActive());
         shaderManager.unbind();
-    M->popMatrix();
+    M->popMatrix(); */
 
     // Set up wall shader colors here
     shaderManager.bind("mat");
@@ -169,38 +169,52 @@ void Application::initGeom(std::string resourceDirectory) {
 
     // Physics ground plane
     PxMaterial *material = physics.getPhysics()->createMaterial(0.3f, 0.3f, 0.3f);
-    gGroundPlane = PxCreatePlane(*(physics.getPhysics()), PxPlane(0, 1, 0, 0), *material);
-    physics.getScene()->addActor(*gGroundPlane);
+    //gGroundPlane = PxCreatePlane(*(physics.getPhysics()), PxPlane(0, 1, 0, 0), *material);
+    //physics.getScene()->addActor(*gGroundPlane);
 
     // Physics box
     PxShape *shape = physics.getPhysics()->createShape(PxBoxGeometry(2, 2, 2), *material);
-    gBox = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(-3, 10, -20)));
+    gBox = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(10, 10, 25)));
     gBox->attachShape(*shape);
     PxRigidBodyExt::updateMassAndInertia(*gBox, 10.0f);
     physics.getScene()->addActor(*gBox);
     shape->release();
 
     PxShape *shape2 = physics.getPhysics()->createShape(PxBoxGeometry(1, 1, 1), *material);
-    gBox2 = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(3, 10, -10)));
+    gBox2 = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(15, 10, 35)));
     gBox2->attachShape(*shape2);
     PxRigidBodyExt::updateMassAndInertia(*gBox2, 10.0f);
     physics.getScene()->addActor(*gBox2);
     shape2->release();
 
+    // Button
     PxShape *shape3 = physics.getPhysics()->createShape(PxBoxGeometry(1, 0.4, 1), *material);
-    gButton = physics.getPhysics()->createRigidStatic(PxTransform(PxVec3(-3, 0.4, 5)));
+    gButton = physics.getPhysics()->createRigidStatic(PxTransform(PxVec3(13, 0.4, 40)));
     gButton->attachShape(*shape3);
     physics.getScene()->addActor(*gButton);
     shape3->release();
 
     // Four outer walls
-    makeWall(PxVec3(25.0f, 4.0f, 0.0f), PxVec3(50.0f, 8.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
-    makeWall(PxVec3(-25.0f, 4.0f, 0.0f), PxVec3(50.0f, 8.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
-    makeWall(PxVec3(0.0f, 4.0f, -50.0f), PxVec3(25.0f, 8.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
-    makeWall(PxVec3(0.0f, 4.0f, 50.0f), PxVec3(25.0f, 8.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(35.0f, 6.0f, 0.0f), PxVec3(50.0f, 6.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+    makeWall(PxVec3(-35.0f, 6.0f, 0.0f), PxVec3(50.0f, 6.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+    makeWall(PxVec3(0.0f, 6.0f, -50.0f), PxVec3(35.0f, 6.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(0.0f, 6.0f, 50.0f), PxVec3(35.0f, 6.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
 
     // Interior middle wall
-    makeWall(PxVec3(5.0f, 4.0f, -10.0f), PxVec3(40.0f, 8.0f, 0.5f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+    makeWall(PxVec3(5.0f, 6.0f, -10.0f), PxVec3(40.0f, 6.0f, 0.5f), PxQuat(M_PI/2, PxVec3(0,1,0)));
+
+    // Maze walls
+    makeWall(PxVec3(11.0f, 6.0f, 15.0f), PxVec3(6.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(29.0f, 6.0f, 15.0f), PxVec3(6.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(17.0f, 6.0f, 5.0f), PxVec3(12.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(22.0f, 6.0f, -5.0f), PxVec3(12.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
+
+    // Lower floor
+    makeWall(PxVec3(20.0f, -1.0f, 20.0f), PxVec3(15.0f, 1.0f, 30.0f), PxQuat(0, PxVec3(0,1,0)));
+
+    // Upper floors
+    makeWall(PxVec3(-15.0f, 3.5f, 40.0f), PxVec3(20.0f, 3.5f, 10.0f), PxQuat(0, PxVec3(0,1,0)));
+    makeWall(PxVec3(-15.0f, 3.5f, -15.0f), PxVec3(20.0f, 3.5f, 35.0f), PxQuat(0, PxVec3(0,1,0)));
 }
 
 void Application::makeWall(PxVec3 pos, PxVec3 size, PxQuat rot) {
