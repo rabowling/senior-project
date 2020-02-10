@@ -7,15 +7,32 @@
 #include "Shape.h"
 
 using namespace physx;
+using namespace std;
 
 Application app;
 
-void Application::run() {
+void Application::run(const vector<string> &args) {
+    // init
     windowManager.init(1280, 720);
     physics.init();
     player.init();
     camera.init(glm::vec3(15, 15, 15), glm::vec3(0, 0, -1));
-    controls.init();
+
+    if (args.size() == 1) {
+        controls.init();
+    }
+    else if (args.size() == 3) {
+        if (args[1] == "-r") {
+            controls.init(Controls::RECORD, args[2]);
+        }
+        else if (args[1] == "-p") {
+            controls.init(Controls::PLAYBACK, args[2]);
+        }
+        else {
+            cout << "Invalid args" << endl;
+            exit(-1);
+        }
+    }
 
     initGeom("../resources");
     shaderManager.loadShaders("../shaders");

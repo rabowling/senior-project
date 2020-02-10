@@ -24,7 +24,7 @@ public:
     Player player;
     Controls controls;
 
-    long stepCount = 0;
+    int stepCount = 0;
     
     float physicsStep;
     float deltaTime;
@@ -41,7 +41,7 @@ public:
 
     std::vector<Wall> walls;
 
-    void run();
+    void run(const std::vector<std::string> &args);
 private:
     void render(float dt);
     void initGeom(std::string resourceDirectory);
