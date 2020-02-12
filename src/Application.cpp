@@ -36,8 +36,8 @@ void Application::run(const vector<string> &args) {
         }
     }
 
-    initGeom("../resources");
-    shaderManager.loadShaders("../shaders");
+    initGeom("../resources/models");
+    shaderManager.loadShaders("../resources/shaders");
     textureManager.loadTextures("../resources/textures");
 
     glEnable(GL_DEPTH_TEST);
