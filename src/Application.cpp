@@ -69,8 +69,11 @@ void Application::render(float dt) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Clear framebuffer.
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glClearColor(.12f, .34f, .56f, 1.0f);
+    glStencilMask(0x00);
 
     /* Leave this code to just draw the meshes alone */
     float aspect = width/(float)height;
@@ -78,6 +81,8 @@ void Application::render(float dt) {
     // Create the matrix stacks
     auto P = std::make_shared<MatrixStack>();
     auto V = std::make_shared<MatrixStack>();
+    auto M = std::make_shared<MatrixStack>();
+
     // Apply perspective projection.
     P->pushMatrix();
     P->perspective(45.0f, aspect, 0.01f, 100.0f);
@@ -86,28 +91,56 @@ void Application::render(float dt) {
     // Render entire scene
     drawScene(P, V);
 
-    /*
     // All fragments update stencil buffer
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilMask(0xFF);
 
     // draw portal 1
+    shaderManager.bind("portal");
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
+    M->pushMatrix();
+        M->translate(portals[0].pos);
+        M->rotate(portals[0].rot);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        portalShape->draw(shaderManager.getActive());
+    M->popMatrix();
 
     // Disable updating stencil buffer
     glStencilMask(0x00);
 
     // Move the camera for portal 1
+    // V->translate(portals[1].pos);
+    // V->rotate(portals[1].rot);
+    V->translate(portals[0].pos);
+    V->rotate(-portals[0].rot);
+    V->translate(-portals[0].pos);
 
     // Only draw area for portal
     glStencilFunc(GL_EQUAL, 1, 0xFF);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
-    // drawScene(P, V);
+    P->loadIdentity();
+    P->perspective(45.0f, aspect, glm::distance(camera.eye, portals[0].pos), 100.0f);
+    drawScene(P, V);
+
+    /*
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     // All fragments update stencil buffer
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilMask(0xFF);
 
     // draw portal 2
+    shaderManager.bind("portal");
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
+    M->pushMatrix();
+        M->translate(portals[1].pos);
+        M->rotate(portals[1].rot);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        portalShape->draw(shaderManager.getActive());
+    M->popMatrix();
 
     // Disable updating stencil buffer
     glStencilMask(0x00);
@@ -117,7 +150,8 @@ void Application::render(float dt) {
     // Only draw area for portal
     glStencilFunc(GL_EQUAL, 1, 0xFF);
 
-    // drawScene(P, V);
+    drawScene(P, V);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     */
 }
 
@@ -209,6 +243,11 @@ void Application::initGeom(std::string resourceDirectory) {
     cylinderShape->loadMesh(resourceDirectory + "/cylinder.obj");
     cylinderShape->init();
 
+    // Portal geometry
+    portalShape = std::make_shared<Shape>();
+    portalShape->loadMesh(resourceDirectory + "/portal.obj");
+    portalShape->init();
+
     // Physics ground plane
     PxMaterial *material = physics.getPhysics()->createMaterial(0.3f, 0.3f, 0.3f);
     //gGroundPlane = PxCreatePlane(*(physics.getPhysics()), PxPlane(0, 1, 0, 0), *material);
@@ -262,6 +301,17 @@ void Application::initGeom(std::string resourceDirectory) {
                 iss.ignore();
             }
             player.setPosition(data[0], data[1], data[2]);
+        }
+        else if (type == "portal") {
+            float data[7];
+            for (int i = 0; i < 7; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            Portal portal;
+            portal.pos = glm::vec3(data[0], data[1], data[2]);
+            portal.rot = glm::quat(data[3], data[4], data[5], data[6]);
+            portals.push_back(portal);
         }
     }
     in.close();

@@ -39,23 +39,22 @@ def write_some_data(context, filepath, use_some_setting):
 
 def serialize_object(collection, obj):
     conversion_mat = axis_conversion(from_forward='-Y', from_up='Z', to_forward='Z', to_up='Y').to_4x4()
+    m = conversion_mat @ obj.matrix_world
     if collection == 'Player':
-        m = conversion_mat @ obj.matrix_world
         return 'player {t.x} {t.y} {t.z}'.format(t = m.to_translation())
     elif collection == 'Walls':
-        m = conversion_mat @ obj.matrix_world
         return ('wall {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
             .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     elif collection == 'Buttons':
         pass
     elif collection == 'Boxes':
-        m = conversion_mat @ obj.matrix_world
         return ('box {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
             .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     elif collection == 'Doors':
         pass
     elif collection == 'Portals':
-        pass
+        return ('portal {t.x} {t.y} {t.z} {r.x} {r.y} {r.z} {r.w}'
+            .format(t = m.to_translation(), r = m.to_quaternion()))
     else:
         return None
 
@@ -115,6 +114,6 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-
+    
     # test call
     bpy.ops.export_test.some_data('INVOKE_DEFAULT')
