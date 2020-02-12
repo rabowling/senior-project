@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include "Shape.h"
 
 using namespace physx;
@@ -234,27 +236,35 @@ void Application::initGeom(std::string resourceDirectory) {
     physics.getScene()->addActor(*gButton);
     shape3->release();
 
-    // Four outer walls
-    makeWall(PxVec3(35.0f, 6.0f, 0.0f), PxVec3(50.0f, 6.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
-    makeWall(PxVec3(-35.0f, 6.0f, 0.0f), PxVec3(50.0f, 6.0f, 1.0f), PxQuat(M_PI/2, PxVec3(0,1,0)));
-    makeWall(PxVec3(0.0f, 6.0f, -50.0f), PxVec3(35.0f, 6.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
-    makeWall(PxVec3(0.0f, 6.0f, 50.0f), PxVec3(35.0f, 6.0f, 1.0f), PxQuat(0, PxVec3(0,1,0)));
-
-    // Interior middle wall
-    makeWall(PxVec3(5.0f, 6.0f, -10.0f), PxVec3(40.0f, 6.0f, 0.5f), PxQuat(M_PI/2, PxVec3(0,1,0)));
-
-    // Maze walls
-    makeWall(PxVec3(11.0f, 6.0f, 15.0f), PxVec3(6.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
-    makeWall(PxVec3(29.0f, 6.0f, 15.0f), PxVec3(6.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
-    makeWall(PxVec3(17.0f, 6.0f, 5.0f), PxVec3(12.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
-    makeWall(PxVec3(22.0f, 6.0f, -5.0f), PxVec3(12.0f, 6.0f, 0.5f), PxQuat(0, PxVec3(0,1,0)));
-
-    // Lower floor
-    makeWall(PxVec3(20.0f, -1.0f, 20.0f), PxVec3(15.0f, 1.0f, 30.0f), PxQuat(0, PxVec3(0,1,0)));
-
-    // Upper floors
-    makeWall(PxVec3(-15.0f, 3.5f, 40.0f), PxVec3(20.0f, 3.5f, 10.0f), PxQuat(0, PxVec3(0,1,0)));
-    makeWall(PxVec3(-15.0f, 3.5f, -15.0f), PxVec3(20.0f, 3.5f, 35.0f), PxQuat(0, PxVec3(0,1,0)));
+    // Load level file
+    ifstream in;
+    in.open("../resources/levels/level1.txt");
+    string line;
+    while (getline(in, line)) {
+        istringstream iss(line);
+        string type;
+        getline(iss, type, ' ');
+        if (type == "wall") {
+            float data[10];
+            for (int i = 0; i < 10; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            PxVec3 pos(data[0], data[1], data[2]);
+            PxVec3 scale(data[3], data[4], data[5]);
+            PxQuat rot(data[6], data[7], data[8], data[9]);
+            makeWall(pos, scale, rot);
+        }
+        else if (type == "player") {
+            float data[3];
+            for (int i = 0; i < 3; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            player.setPosition(data[0], data[1], data[2]);
+        }
+    }
+    in.close();
 }
 
 void Application::makeWall(PxVec3 pos, PxVec3 size, PxQuat rot) {

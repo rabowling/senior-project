@@ -8,6 +8,7 @@ class Player : public physx::PxUserControllerHitReport {
     public:
         void update(float dt);
         void init();
+        void setPosition(float x, float y, float z);
         
         virtual void onShapeHit(const physx::PxControllerShapeHit &hit);
         virtual void onControllerHit(const physx::PxControllersHit &hit);

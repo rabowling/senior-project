@@ -28,6 +28,10 @@ void Player::onShapeHit(const PxControllerShapeHit &hit) {
     }
 }
 
+void Player::setPosition(float x, float y, float z) {
+    mController->setFootPosition(PxExtendedVec3(x, y, z));
+}
+
 void Player::onControllerHit(const PxControllersHit &hit) {
 
 }
