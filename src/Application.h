@@ -44,6 +44,7 @@ public:
     void run(const std::vector<std::string> &args);
 private:
     void render(float dt);
+    void drawScene(std::shared_ptr<MatrixStack> P, std::shared_ptr<MatrixStack> V);
     void initGeom(std::string resourceDirectory);
     void makeWall(physx::PxVec3 pos, physx::PxVec3 size, physx::PxQuat rot);
 };

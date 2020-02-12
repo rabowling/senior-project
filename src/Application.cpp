@@ -40,6 +40,9 @@ void Application::run(const vector<string> &args) {
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_STENCIL_TEST);
+
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     while (!glfwWindowShouldClose(windowManager.getHandle())) {
         controls.update();
@@ -72,12 +75,52 @@ void Application::render(float dt) {
 
     // Create the matrix stacks
     auto P = std::make_shared<MatrixStack>();
-    auto M = std::make_shared<MatrixStack>();
     auto V = std::make_shared<MatrixStack>();
     // Apply perspective projection.
     P->pushMatrix();
     P->perspective(45.0f, aspect, 0.01f, 100.0f);
     camera.lookAt(V);
+
+    // Render entire scene
+    drawScene(P, V);
+
+    /*
+    // All fragments update stencil buffer
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+
+    // draw portal 1
+
+    // Disable updating stencil buffer
+    glStencilMask(0x00);
+
+    // Move the camera for portal 1
+
+    // Only draw area for portal
+    glStencilFunc(GL_EQUAL, 1, 0xFF);
+
+    // drawScene(P, V);
+
+    // All fragments update stencil buffer
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+
+    // draw portal 2
+
+    // Disable updating stencil buffer
+    glStencilMask(0x00);
+
+    // Move the camera for portal 2
+
+    // Only draw area for portal
+    glStencilFunc(GL_EQUAL, 1, 0xFF);
+
+    // drawScene(P, V);
+    */
+}
+
+void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V) {
+    auto M = std::make_shared<MatrixStack>();
 
     shaderManager.bind("tex");
     textureManager.bind("marble", "Texture0");
@@ -130,26 +173,6 @@ void Application::render(float dt) {
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
         cylinderShape->draw(shaderManager.getActive());
     M->popMatrix();
-    /*M->pushMatrix();
-        shaderManager.bind("mat");
-        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
-		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.8, 0.8, 0.8);
-        glUniform3f(shaderManager.getUniform("MatDif"), 0.8, 0.8, 0.8);
-        glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0.8);
-        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
-        glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
-        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
-
-        t = gGroundPlane->getGlobalPose();
-        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        //M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        M->scale(100);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        planeShape->draw(shaderManager.getActive());
-        shaderManager.unbind();
-    M->popMatrix(); */
 
     // Set up wall shader colors here
     shaderManager.bind("wall");
