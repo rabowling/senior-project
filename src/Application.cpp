@@ -86,7 +86,6 @@ void Application::render(float dt) {
     auto M = std::make_shared<MatrixStack>();
 
     // Apply perspective projection.
-    P->pushMatrix();
     P->perspective(45.0f, aspect, 0.01f, 100.0f);
     camera.lookAt(V);
 
@@ -108,41 +107,8 @@ void Application::render(float dt) {
         portalShape->draw(shaderManager.getActive());
     M->popMatrix();
 
-    // Disable updating stencil buffer
-    glStencilMask(0x00);
-
-    // Move the camera for portal 1
-    vec3 portal2Up = vec3(mat4_cast(portals[1].rot) * vec4(0, 0, -1, 0));
-    auto camTransform = std::make_shared<MatrixStack>();
-    camTransform->translate(portals[1].pos);
-    camTransform->rotate(M_PI, portal2Up);
-    camTransform->rotate(portals[1].rot);
-    camTransform->rotate(inverse(portals[0].rot));
-    camTransform->translate(-portals[0].pos);
-    
-    vec3 eye = vec3(camTransform->topMatrix() * vec4(camera.eye, 1));
-    vec3 lookAtPoint = vec3(camTransform->topMatrix() * vec4(camera.lookAtPoint, 1));
-    vec3 upVec = vec3(camTransform->topMatrix() * vec4(camera.upVec, 0));
-
-    V->loadIdentity();
-    V->lookAt(eye, lookAtPoint, upVec);
-
-    // Only draw area for portal
-    glStencilFunc(GL_EQUAL, 1, 0xFF);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    P->loadIdentity();
-    P->perspective(45.0f, aspect, glm::distance(camera.eye, portals[0].pos), 100.0f);
-    drawScene(P, V);
-
-    /*
-    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    // All fragments update stencil buffer
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glStencilMask(0xFF);
-
     // draw portal 2
+    glStencilFunc(GL_ALWAYS, 2, 0xFF);
     shaderManager.bind("portal");
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
@@ -156,14 +122,52 @@ void Application::render(float dt) {
     // Disable updating stencil buffer
     glStencilMask(0x00);
 
-    // Move the camera for portal 2
+    // Move the camera for portal 1
+    vec3 portalUp = vec3(mat4_cast(portals[1].rot) * vec4(0, 0, -1, 0));
+    auto camTransform = std::make_shared<MatrixStack>();
+    camTransform->translate(portals[1].pos);
+    camTransform->rotate(M_PI, portalUp);
+    camTransform->rotate(portals[1].rot);
+    camTransform->rotate(inverse(portals[0].rot));
+    camTransform->translate(-portals[0].pos);
 
-    // Only draw area for portal
+    vec3 eye = vec3(camTransform->topMatrix() * vec4(camera.eye, 1));
+    vec3 lookAtPoint = vec3(camTransform->topMatrix() * vec4(camera.lookAtPoint, 1));
+    vec3 upVec = vec3(camTransform->topMatrix() * vec4(camera.upVec, 0));
+
+    V->loadIdentity();
+    V->lookAt(eye, lookAtPoint, upVec);
+
+    // Only draw area for portal 1
     glStencilFunc(GL_EQUAL, 1, 0xFF);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
+    P->loadIdentity();
+    P->perspective(45.0f, aspect, glm::distance(camera.eye, portals[0].pos), 100.0f);
     drawScene(P, V);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    */
+
+    // Move the camera for portal 2
+    portalUp = vec3(mat4_cast(portals[0].rot) * vec4(0, 0, -1, 0));
+    camTransform = std::make_shared<MatrixStack>();
+    camTransform->translate(portals[0].pos);
+    camTransform->rotate(M_PI, portalUp);
+    camTransform->rotate(portals[0].rot);
+    camTransform->rotate(inverse(portals[1].rot));
+    camTransform->translate(-portals[1].pos);
+
+    eye = vec3(camTransform->topMatrix() * vec4(camera.eye, 1));
+    lookAtPoint = vec3(camTransform->topMatrix() * vec4(camera.lookAtPoint, 1));
+    upVec = vec3(camTransform->topMatrix() * vec4(camera.upVec, 0));
+
+    V->loadIdentity();
+    V->lookAt(eye, lookAtPoint, upVec);
+
+    // Only draw area for portal 2
+    glStencilFunc(GL_EQUAL, 2, 0xFF);
+
+    P->loadIdentity();
+    P->perspective(45.0f, aspect, glm::distance(camera.eye, portals[1].pos), 100.0f);
+    drawScene(P, V);
 }
 
 void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V) {
