@@ -53,7 +53,7 @@ def serialize_object(collection, obj):
     elif collection == 'Doors':
         pass
     elif collection == 'Portals':
-        return ('portal {t.x} {t.y} {t.z} {r.x} {r.y} {r.z} {r.w}'
+        return ('portal {t.x} {t.y} {t.z} {r.w} {r.x} {r.y} {r.z}'
             .format(t = m.to_translation(), r = m.to_quaternion()))
     else:
         return None

@@ -6,10 +6,12 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Shape.h"
 
 using namespace physx;
 using namespace std;
+using namespace glm;
 
 Application app;
 
@@ -110,11 +112,20 @@ void Application::render(float dt) {
     glStencilMask(0x00);
 
     // Move the camera for portal 1
-    // V->translate(portals[1].pos);
-    // V->rotate(portals[1].rot);
-    V->translate(portals[0].pos);
-    V->rotate(-portals[0].rot);
-    V->translate(-portals[0].pos);
+    vec3 portal2Up = vec3(mat4_cast(portals[1].rot) * vec4(0, 0, -1, 0));
+    auto camTransform = std::make_shared<MatrixStack>();
+    camTransform->translate(portals[1].pos);
+    camTransform->rotate(M_PI, portal2Up);
+    camTransform->rotate(portals[1].rot);
+    camTransform->rotate(inverse(portals[0].rot));
+    camTransform->translate(-portals[0].pos);
+    
+    vec3 eye = vec3(camTransform->topMatrix() * vec4(camera.eye, 1));
+    vec3 lookAtPoint = vec3(camTransform->topMatrix() * vec4(camera.lookAtPoint, 1));
+    vec3 upVec = vec3(camTransform->topMatrix() * vec4(camera.upVec, 0));
+
+    V->loadIdentity();
+    V->lookAt(eye, lookAtPoint, upVec);
 
     // Only draw area for portal
     glStencilFunc(GL_EQUAL, 1, 0xFF);
