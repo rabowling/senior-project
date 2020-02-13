@@ -20,12 +20,12 @@ public:
     glm::vec3 eye;
     double radius = 10;
     glm::vec3 lookAtPoint;
+    glm::vec3 upVec = glm::vec3(0, 1, 0);
     
 private:
     WindowManager *windowManager;
     double pitch = 0;
     double yaw = 0;
-    glm::vec3 upVec = glm::vec3(0, 1, 0);
     CameraMode mode = FREE_CAM;
     physx::PxController *mController;
 

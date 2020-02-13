@@ -12,6 +12,7 @@
 #include "Wall.h"
 #include <string>
 #include <vector>
+#include <glm/glm.hpp>
 
 class Application
 {
@@ -38,6 +39,14 @@ public:
     std::shared_ptr<Shape> boxShape;
     std::shared_ptr<Shape> planeShape;
     std::shared_ptr<Shape> cylinderShape;
+    std::shared_ptr<Shape> portalShape;
+
+    struct Portal {
+        glm::vec3 pos;
+        glm::quat rot;
+    };
+
+    std::vector<Portal> portals;
 
     std::vector<Wall> walls;
 
