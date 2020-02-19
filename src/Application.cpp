@@ -8,6 +8,7 @@
 #include <sstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "Shape.h"
+#include "GLSL.h"
 
 using namespace physx;
 using namespace std;
@@ -61,6 +62,30 @@ void Application::run(const vector<string> &args) {
     }
 
     windowManager.shutdown();
+}
+
+// https://aras-p.info/texts/obliqueortho.html
+// Set the near plane of the projection matrix
+void modifyProjectionMatrix(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V, vec3 norm, vec3 point) {
+    norm = vec3(V->topMatrix() * vec4(norm, 0));
+    point = vec3(V->topMatrix() * vec4(point, 1));
+    vec4 clipPlane = vec4(norm, -dot(norm, point));
+    mat4 mat = P->topMatrix();
+
+    vec4 q = inverse(mat) * vec4(
+        sign(clipPlane.x),
+        sign(clipPlane.y),
+        1,
+        1
+    );
+    vec4 c = clipPlane * (2 / dot(clipPlane, q));
+    mat[0][2] = c.x - mat[0][3];
+    mat[1][2] = c.y - mat[1][3];
+    mat[2][2] = c.z - mat[2][3];
+    mat[3][2] = c.w - mat[3][3];
+
+    P->loadIdentity();
+    P->multMatrix(mat);
 }
 
 void Application::render(float dt) {
@@ -143,8 +168,20 @@ void Application::render(float dt) {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     P->loadIdentity();
-    P->perspective(45.0f, aspect, glm::distance(camera.eye, portals[0].pos), 100.0f);
+    P->perspective(45.0f, aspect, 0.01f, 100.0f);
+    modifyProjectionMatrix(P, V, vec3(mat4_cast(portals[1].rot) * vec4(0, 1, 0, 0)), portals[1].pos);
     drawScene(P, V);
+
+    // draw other portal
+    shaderManager.bind("portal");
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
+    M->pushMatrix();
+        M->translate(portals[0].pos);
+        M->rotate(portals[0].rot);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        portalShape->draw(shaderManager.getActive());
+    M->popMatrix();
 
     // Move the camera for portal 2
     portalUp = vec3(mat4_cast(portals[0].rot) * vec4(0, 0, -1, 0));
@@ -166,8 +203,20 @@ void Application::render(float dt) {
     glStencilFunc(GL_EQUAL, 2, 0xFF);
 
     P->loadIdentity();
-    P->perspective(45.0f, aspect, glm::distance(camera.eye, portals[1].pos), 100.0f);
+    P->perspective(45.0f, aspect, 0.01f, 100.0f);
+    modifyProjectionMatrix(P, V, vec3(mat4_cast(portals[0].rot) * vec4(0, 1, 0, 0)), portals[0].pos);
     drawScene(P, V);
+
+    // draw other portal
+    shaderManager.bind("portal");
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
+    M->pushMatrix();
+        M->translate(portals[1].pos);
+        M->rotate(portals[1].rot);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        portalShape->draw(shaderManager.getActive());
+    M->popMatrix();
 }
 
 void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V) {
