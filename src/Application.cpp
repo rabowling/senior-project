@@ -21,7 +21,6 @@ void Application::run(const vector<string> &args) {
     windowManager.init(1280, 720);
     physics.init();
     player.init();
-    camera.init(glm::vec3(15, 15, 15), glm::vec3(0, 0, -1));
 
     if (args.size() == 1) {
         controls.init();
@@ -52,41 +51,16 @@ void Application::run(const vector<string> &args) {
 
     while (!glfwWindowShouldClose(windowManager.getHandle())) {
         controls.update();
-        camera.update(1.0f / 60.0f);
-        render(1.0f / 60.0f);
         player.update(1.0f / 60.0f);
         physics.getScene()->simulate(1.0f / 60.0f);
         stepCount++;
         physics.getScene()->fetchResults(true);
+        render(1.0f / 60.0f);
         glfwSwapBuffers(windowManager.getHandle());
         glfwPollEvents();
     }
 
     windowManager.shutdown();
-}
-
-// https://aras-p.info/texts/obliqueortho.html
-// Set the near plane of the projection matrix
-void modifyProjectionMatrix(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V, vec3 norm, vec3 point) {
-    norm = vec3(V->topMatrix() * vec4(norm, 0));
-    point = vec3(V->topMatrix() * vec4(point, 1));
-    vec4 clipPlane = vec4(norm, -dot(norm, point));
-    mat4 mat = P->topMatrix();
-
-    vec4 q = inverse(mat) * vec4(
-        sign(clipPlane.x),
-        sign(clipPlane.y),
-        1,
-        1
-    );
-    vec4 c = clipPlane * (2 / dot(clipPlane, q));
-    mat[0][2] = c.x - mat[0][3];
-    mat[1][2] = c.y - mat[1][3];
-    mat[2][2] = c.z - mat[2][3];
-    mat[3][2] = c.w - mat[3][3];
-
-    P->loadIdentity();
-    P->multMatrix(mat);
 }
 
 void Application::render(float dt) {
@@ -103,131 +77,46 @@ void Application::render(float dt) {
     glClearColor(.12f, .34f, .56f, 1.0f);
     glStencilMask(0x00);
 
-    /* Leave this code to just draw the meshes alone */
-    float aspect = width/(float)height;
-
-    // Create the matrix stacks
-    auto P = std::make_shared<MatrixStack>();
-    auto V = std::make_shared<MatrixStack>();
-    auto M = std::make_shared<MatrixStack>();
-
-    // Apply perspective projection.
-    P->perspective(45.0f, aspect, 0.01f, 100.0f);
-    camera.lookAt(V);
+    // Create MVP matrices
+    MatrixStack M;
+    float aspect = width / (float) height;
+    mat4 V = player.camera.getLookAt();
+    mat4 P = glm::perspective(45.0f, aspect, 0.01f, 100.0f);
 
     // Render entire scene
-    drawScene(P, V);
+    drawScene(P, V, player.camera);
 
-    // All fragments update stencil buffer
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    // Draw geometry of portals to stencil buffer
+    shaderManager.bind("portal");
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P));
     glStencilMask(0xFF);
+    for (int i = 0; i < portals.size(); i++) {
+        glStencilFunc(GL_ALWAYS, i + 1, 0xFF);
+        portals[i].draw(M);
+    }
 
-    // draw portal 1
-    shaderManager.bind("portal");
-    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
-    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
-    M->pushMatrix();
-        M->translate(portals[0].pos);
-        M->rotate(portals[0].rot);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        modelManager.draw("portal");
-    M->popMatrix();
-
-    // draw portal 2
-    glStencilFunc(GL_ALWAYS, 2, 0xFF);
-    shaderManager.bind("portal");
-    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
-    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
-    M->pushMatrix();
-        M->translate(portals[1].pos);
-        M->rotate(portals[1].rot);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        modelManager.draw("portal");
-    M->popMatrix();
-
-    // Disable updating stencil buffer
+    // Render scene through portals
     glStencilMask(0x00);
-
-    // Move the camera for portal 1
-    vec3 portalUp = vec3(mat4_cast(portals[1].rot) * vec4(0, 0, -1, 0));
-    auto camTransform = std::make_shared<MatrixStack>();
-    camTransform->translate(portals[1].pos);
-    camTransform->rotate(M_PI, portalUp);
-    camTransform->rotate(portals[1].rot);
-    camTransform->rotate(inverse(portals[0].rot));
-    camTransform->translate(-portals[0].pos);
-
-    vec3 eye = vec3(camTransform->topMatrix() * vec4(camera.eye, 1));
-    vec3 lookAtPoint = vec3(camTransform->topMatrix() * vec4(camera.lookAtPoint, 1));
-    vec3 upVec = vec3(camTransform->topMatrix() * vec4(camera.upVec, 0));
-
-    V->loadIdentity();
-    V->lookAt(eye, lookAtPoint, upVec);
-
-    // Only draw area for portal 1
-    glStencilFunc(GL_EQUAL, 1, 0xFF);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    P->loadIdentity();
-    P->perspective(45.0f, aspect, 0.01f, 100.0f);
-    modifyProjectionMatrix(P, V, vec3(mat4_cast(portals[1].rot) * vec4(0, 1, 0, 0)), portals[1].pos);
-    drawScene(P, V);
-
-    // draw other portal
-    shaderManager.bind("portal");
-    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
-    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
-    M->pushMatrix();
-        M->translate(portals[0].pos);
-        M->rotate(portals[0].rot);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        modelManager.draw("portal");
-    M->popMatrix();
-
-    // Move the camera for portal 2
-    portalUp = vec3(mat4_cast(portals[0].rot) * vec4(0, 0, -1, 0));
-    camTransform = std::make_shared<MatrixStack>();
-    camTransform->translate(portals[0].pos);
-    camTransform->rotate(M_PI, portalUp);
-    camTransform->rotate(portals[0].rot);
-    camTransform->rotate(inverse(portals[1].rot));
-    camTransform->translate(-portals[1].pos);
-
-    eye = vec3(camTransform->topMatrix() * vec4(camera.eye, 1));
-    lookAtPoint = vec3(camTransform->topMatrix() * vec4(camera.lookAtPoint, 1));
-    upVec = vec3(camTransform->topMatrix() * vec4(camera.upVec, 0));
-
-    V->loadIdentity();
-    V->lookAt(eye, lookAtPoint, upVec);
-
-    // Only draw area for portal 2
-    glStencilFunc(GL_EQUAL, 2, 0xFF);
-
-    P->loadIdentity();
-    P->perspective(45.0f, aspect, 0.01f, 100.0f);
-    modifyProjectionMatrix(P, V, vec3(mat4_cast(portals[0].rot) * vec4(0, 1, 0, 0)), portals[0].pos);
-    drawScene(P, V);
-
-    // draw other portal
-    shaderManager.bind("portal");
-    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V->topMatrix()));
-    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P->topMatrix()));
-    M->pushMatrix();
-        M->translate(portals[1].pos);
-        M->rotate(portals[1].rot);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        modelManager.draw("portal");
-    M->popMatrix();
+    for (int i = 0; i < portals.size(); i++) {
+        glStencilFunc(GL_EQUAL, i + 1, 0xFF);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        Portal *linkedPortal = portals[i].linkedPortal;
+        linkedPortal->updateCamera(player.camera);
+        mat4 portalV = linkedPortal->camera.getLookAt();
+        mat4 portalP = linkedPortal->modifyProjectionMatrix(P, portalV);
+        drawScene(portalP, portalV, linkedPortal->camera);
+    }
 }
 
-void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V) {
-    auto M = std::make_shared<MatrixStack>();
+void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) {
+    MatrixStack M;
 
     shaderManager.bind("tex");
     textureManager.bind("marble", "Texture0");
 
-    M->pushMatrix();
-        M->loadIdentity();
+    M.pushMatrix();
+        M.loadIdentity();
 
         // Draw spiders
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
@@ -236,25 +125,25 @@ void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V
         glUniform3f(shaderManager.getUniform("MatDif"), 0.396, 0.74151, 0.69102);
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
         glUniform1f(shaderManager.getUniform("Shine"), 12.8);
-        glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
-        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
+        glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
+        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
+        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
 
         PxTransform t = gBox->getGlobalPose();
-        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        M->scale(2);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
+        M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
+        M.scale(2);
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
         modelManager.draw("cube");
-    M->popMatrix();
-    M->pushMatrix();
+    M.popMatrix();
+    M.pushMatrix();
         t = gBox2->getGlobalPose();
-        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
+        M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
         modelManager.draw("cube");
-    M->popMatrix();
-    M->pushMatrix();
+    M.popMatrix();
+    M.pushMatrix();
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
@@ -265,15 +154,15 @@ void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V
         }
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
         glUniform1f(shaderManager.getUniform("Shine"), 12.8);
-        glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
-        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
+        glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
+        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
+        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
         t = gButton->getGlobalPose();
-        M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
+        M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
+        M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
+        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
         modelManager.draw("cylinder");
-    M->popMatrix();
+    M.popMatrix();
 
     // Set up wall shader colors here
     shaderManager.bind("wall");
@@ -284,9 +173,9 @@ void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V
     glUniform3f(shaderManager.getUniform("MatDif"), 0.50754, 0.50754, 0.50754);
     glUniform3f(shaderManager.getUniform("MatSpec"), 0.508273, 0.508273, 0.508273);
     glUniform1f(shaderManager.getUniform("Shine"), 51.2);
-    glUniform3f(shaderManager.getUniform("viewPos"), camera.eye.x, camera.eye.y, camera.eye.z);
-    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
-    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
+    glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
     for (int i = 0; i < walls.size(); i++) {
         walls[i].draw(M);
     }
@@ -354,12 +243,15 @@ void Application::initGeom() {
                 iss >> data[i];
                 iss.ignore();
             }
+            vec3 pos = glm::vec3(data[0], data[1], data[2]);
+            quat rot = glm::quat(data[3], data[4], data[5], data[6]);
             Portal portal;
-            portal.pos = glm::vec3(data[0], data[1], data[2]);
-            portal.rot = glm::quat(data[3], data[4], data[5], data[6]);
+            portal.open = true;
+            portal.setPosition(pos, rot);
             portals.push_back(portal);
         }
     }
+    portals[0].linkPortal(&portals[1]);
     in.close();
 }
 

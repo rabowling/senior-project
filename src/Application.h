@@ -11,6 +11,7 @@
 #include "Player.h"
 #include "Controls.h"
 #include "Wall.h"
+#include "Portal.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -19,7 +20,6 @@ class Application
 {
 public:
     Physics physics;
-    Camera camera;
     ShaderManager shaderManager;
     TextureManager textureManager;
     ModelManager modelManager;
@@ -38,11 +38,6 @@ public:
     physx::PxRigidStatic *gButton = NULL;
     bool buttonPressed = false;
 
-    struct Portal {
-        glm::vec3 pos;
-        glm::quat rot;
-    };
-
     std::vector<Portal> portals;
 
     std::vector<Wall> walls;
@@ -50,7 +45,7 @@ public:
     void run(const std::vector<std::string> &args);
 private:
     void render(float dt);
-    void drawScene(std::shared_ptr<MatrixStack> P, std::shared_ptr<MatrixStack> V);
+    void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
     void initGeom();
     void makeWall(physx::PxVec3 pos, physx::PxVec3 size, physx::PxQuat rot);
 };

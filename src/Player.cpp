@@ -53,12 +53,13 @@ void Player::init() {
     mController = app.physics.getControllerManager()->createController(desc);
     mWindowManager = &app.windowManager;
     velocity = PxVec3(0);
-    mCamera = &app.camera;
+    camera.init(px2glm(desc.position), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
     mScene = app.physics.getScene();
 }
 
 void Player::update(float dt) {
-    glm::vec3 lookAt = mCamera->lookAtPoint;
+    camera.update(px2glm(mController->getPosition()), app.controls.getMouseDeltaX(), app.controls.getMouseDeltaY());
+    glm::vec3 lookAt = camera.lookAtPoint;
     PxVec3 direction = PxExtendedVec3(lookAt.x, lookAt.y, lookAt.z) - mController->getPosition();
     direction.y = 0.0f;
     PxVec3 up = PxVec3(0.0f,1.0f,0.0f);
@@ -133,7 +134,7 @@ void Player::update(float dt) {
     // Move held item in front of player
     if (heldItem != NULL) {
         float holdDistance = 5.f;
-        PxVec3 targetLocation = glm2px(mCamera->eye + holdDistance * (lookAt - mCamera->eye));
+        PxVec3 targetLocation = glm2px(camera.eye + holdDistance * (lookAt - camera.eye));
         PxVec3 vectorToTargetLocation = targetLocation - heldItem->getGlobalPose().p;
 
         heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);

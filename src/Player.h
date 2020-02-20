@@ -13,10 +13,10 @@ class Player : public physx::PxUserControllerHitReport {
         virtual void onShapeHit(const physx::PxControllerShapeHit &hit);
         virtual void onControllerHit(const physx::PxControllersHit &hit);
         virtual void onObstacleHit(const physx::PxControllerObstacleHit &hit);
+        Camera camera;
     private:
         physx::PxController *mController;
         physx::PxScene *mScene;
-        Camera *mCamera;
         WindowManager *mWindowManager;
         physx::PxVec3 origin;
         physx::PxVec3 unitDir;

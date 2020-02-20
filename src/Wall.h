@@ -9,7 +9,7 @@ class Wall {
     public:
         Wall();
         void init(physx::PxVec3 position, physx::PxVec3 size, physx::PxQuat orientation, Physics physics);
-        void draw(std::shared_ptr<MatrixStack> M);
+        void draw(MatrixStack &M);
     
     private:
         physx::PxVec3 size;

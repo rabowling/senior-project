@@ -25,3 +25,7 @@ std::vector<std::string> listDir(std::string dir) {
 physx::PxVec3 glm2px(glm::vec3 v) {
     return PxVec3(v.x, v.y, v.z);
 }
+
+glm::vec3 px2glm(physx::PxExtendedVec3 v) {
+    return glm::vec3(v.x, v.y, v.z);
+}

@@ -1,6 +1,7 @@
 #include "Camera.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 #include <algorithm>
 #include <memory>
@@ -10,17 +11,11 @@
 using namespace std;
 using namespace glm;
 
-void Camera::update(float dt)
+void Camera::update(glm::vec3 pos, float deltaYaw, float deltaPitch)
 {
-    // Common mouse movement
-    double xpos, ypos;
-    int width, height;
-    physx::PxExtendedVec3 pos;
-    glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
-    yaw -= app.controls.getMouseDeltaX();
-    pitch = std::max(std::min(pitch + app.controls.getMouseDeltaY(), radians(80.0)), -radians(80.0));
+    yaw -= deltaYaw;
+    pitch = std::max(std::min(pitch + deltaPitch, radians(80.0)), -radians(80.0));
     
-    pos = mController->getPosition();
     eye.x = pos.x;
     eye.y = pos.y;
     eye.z = pos.z;
@@ -28,78 +23,19 @@ void Camera::update(float dt)
     lookAtPoint.x = eye.x + cos(pitch) * sin(yaw);
 	lookAtPoint.y = eye.y + sin(pitch);
 	lookAtPoint.z = eye.z + cos(pitch) * cos(M_PI - yaw);
-
-    /*
-    if (mode == FREE_CAM)
-    {
-        // Translational movement
-        float speed = flyingSpeed;
-        vec3 velocity = vec3(0, 0, 0);
-        vec3 strafe = normalize(cross(lookAtPoint - eye, upVec));
-        vec3 dolly = normalize(lookAtPoint - eye);
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS ||
-            glfwGetKey(windowManager->getHandle(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        {
-            speed *= sprintFactor;
-        }
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_W) == GLFW_PRESS)
-        {
-            velocity += dolly;
-        }
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_S) == GLFW_PRESS)
-        {
-            velocity -= dolly;
-        }
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_D) == GLFW_PRESS)
-        {
-            velocity += strafe;
-        }
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_A) == GLFW_PRESS)
-        {
-            velocity -= strafe;
-        }
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_E) == GLFW_PRESS)
-        {
-            velocity += vec3(0, 1, 0);
-        }
-        if (glfwGetKey(windowManager->getHandle(), GLFW_KEY_Q) == GLFW_PRESS)
-        {
-            velocity -= vec3(0, 1, 0);
-        }
-        if (length(velocity) != 0 && length(velocity) != NAN)
-        {
-            eye += normalize(velocity) * speed * dt;
-        }
-
-        // Mouse movement
-        lookAtPoint.x = eye.x + cos(pitch) * sin(yaw);
-		lookAtPoint.y = eye.y + sin(pitch);
-		lookAtPoint.z = eye.z + cos(pitch) * cos(M_PI - yaw);
-    }
-    else if (mode == FOLLOW_CAM)
-    {
-        // nothing
-    } */
 }
 
-void Camera::lookAt(shared_ptr<MatrixStack> V)
-{
-    if (mode == FREE_CAM)
-    {
-        V->lookAt(eye, lookAtPoint, upVec);
-    }
-    else if (mode == FOLLOW_CAM)
-    {
-        // nothing
-    }
+glm::mat4 Camera::getLookAt() {
+    return glm::lookAt(eye, lookAtPoint, upVec);
 }
 
-void Camera::init(glm::vec3 pos, glm::vec3 lookDir)
+void Camera::init(glm::vec3 pos, glm::vec3 lookDir, glm::vec3 upVec)
 {
-    this->windowManager = &app.windowManager;
     eye = pos;
     lookAtPoint = pos + lookDir;
-    mController = app.physics.getControllerManager()->getController(0);
+    pitch = asin(-lookDir.y);
+    yaw = atan2(lookDir.x, lookDir.z);
+    this->upVec = upVec;
 }
 
 void Camera::toggleMode()
