@@ -39,9 +39,10 @@ void Application::run(const vector<string> &args) {
         }
     }
 
-    initGeom("../resources/models");
+    initGeom();
     shaderManager.loadShaders("../resources/shaders");
     textureManager.loadTextures("../resources/textures");
+    modelManager.loadModels("../resources/models");
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -129,7 +130,7 @@ void Application::render(float dt) {
         M->translate(portals[0].pos);
         M->rotate(portals[0].rot);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        portalShape->draw(shaderManager.getActive());
+        modelManager.draw("portal");
     M->popMatrix();
 
     // draw portal 2
@@ -141,7 +142,7 @@ void Application::render(float dt) {
         M->translate(portals[1].pos);
         M->rotate(portals[1].rot);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        portalShape->draw(shaderManager.getActive());
+        modelManager.draw("portal");
     M->popMatrix();
 
     // Disable updating stencil buffer
@@ -180,7 +181,7 @@ void Application::render(float dt) {
         M->translate(portals[0].pos);
         M->rotate(portals[0].rot);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        portalShape->draw(shaderManager.getActive());
+        modelManager.draw("portal");
     M->popMatrix();
 
     // Move the camera for portal 2
@@ -215,7 +216,7 @@ void Application::render(float dt) {
         M->translate(portals[1].pos);
         M->rotate(portals[1].rot);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        portalShape->draw(shaderManager.getActive());
+        modelManager.draw("portal");
     M->popMatrix();
 }
 
@@ -244,14 +245,14 @@ void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V
         M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         M->scale(2);
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        boxShape->draw(shaderManager.getActive());
+        modelManager.draw("cube");
     M->popMatrix();
     M->pushMatrix();
         t = gBox2->getGlobalPose();
         M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
         M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        boxShape->draw(shaderManager.getActive());
+        modelManager.draw("cube");
     M->popMatrix();
     M->pushMatrix();
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
@@ -271,7 +272,7 @@ void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V
         M->translate(glm::vec3(t.p.x, t.p.y, t.p.z));
         M->rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M->topMatrix()));
-        cylinderShape->draw(shaderManager.getActive());
+        modelManager.draw("cylinder");
     M->popMatrix();
 
     // Set up wall shader colors here
@@ -287,30 +288,11 @@ void Application::drawScene(shared_ptr<MatrixStack> P, shared_ptr<MatrixStack> V
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V->topMatrix()));
     for (int i = 0; i < walls.size(); i++) {
-        walls[i].draw(shaderManager, M);
+        walls[i].draw(M);
     }
 }
 
-void Application::initGeom(std::string resourceDirectory) {
-    // Box geometry
-    boxShape = std::make_shared<Shape>();
-    boxShape->loadMesh(resourceDirectory + "/cube.obj");
-    boxShape->init();
-
-    // Plane geometry
-    planeShape = std::make_shared<Shape>();
-    planeShape->loadMesh(resourceDirectory + "/plane.obj");
-    planeShape->init();
-
-    // Cylinder geometry
-    cylinderShape = std::make_shared<Shape>();
-    cylinderShape->loadMesh(resourceDirectory + "/cylinder.obj");
-    cylinderShape->init();
-
-    // Portal geometry
-    portalShape = std::make_shared<Shape>();
-    portalShape->loadMesh(resourceDirectory + "/portal.obj");
-    portalShape->init();
+void Application::initGeom() {
 
     // Physics ground plane
     PxMaterial *material = physics.getPhysics()->createMaterial(0.3f, 0.3f, 0.3f);
@@ -383,6 +365,6 @@ void Application::initGeom(std::string resourceDirectory) {
 
 void Application::makeWall(PxVec3 pos, PxVec3 size, PxQuat rot) {
     Wall w;
-    w.init(pos, size, rot, physics, boxShape);
+    w.init(pos, size, rot, physics);
     walls.push_back(w);
 }

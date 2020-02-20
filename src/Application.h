@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "ShaderManager.h"
 #include "TextureManager.h"
+#include "ModelManager.h"
 #include "WindowManager.h"
 #include "Player.h"
 #include "Controls.h"
@@ -21,6 +22,7 @@ public:
     Camera camera;
     ShaderManager shaderManager;
     TextureManager textureManager;
+    ModelManager modelManager;
     WindowManager windowManager;
     Player player;
     Controls controls;
@@ -36,11 +38,6 @@ public:
     physx::PxRigidStatic *gButton = NULL;
     bool buttonPressed = false;
 
-    std::shared_ptr<Shape> boxShape;
-    std::shared_ptr<Shape> planeShape;
-    std::shared_ptr<Shape> cylinderShape;
-    std::shared_ptr<Shape> portalShape;
-
     struct Portal {
         glm::vec3 pos;
         glm::quat rot;
@@ -54,7 +51,7 @@ public:
 private:
     void render(float dt);
     void drawScene(std::shared_ptr<MatrixStack> P, std::shared_ptr<MatrixStack> V);
-    void initGeom(std::string resourceDirectory);
+    void initGeom();
     void makeWall(physx::PxVec3 pos, physx::PxVec3 size, physx::PxQuat rot);
 };
 
