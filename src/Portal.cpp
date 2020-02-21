@@ -21,6 +21,16 @@ void Portal::draw(MatrixStack &M) {
     M.popMatrix();
 }
 
+void Portal::drawOutline(MatrixStack &M) {
+    M.pushMatrix();
+    M.translate(position);
+    M.rotate(orientation);
+    M.scale(1.1);
+    glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
+    app.modelManager.draw(model);
+    M.popMatrix();
+}
+
 void Portal::updateCamera(const Camera &playerCamera) {
     MatrixStack camTransform;
     camTransform.translate(position);

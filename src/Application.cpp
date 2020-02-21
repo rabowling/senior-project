@@ -14,6 +14,8 @@ using namespace physx;
 using namespace std;
 using namespace glm;
 
+#define FPS 1.0f / 60.0f
+
 Application app;
 
 void Application::run(const vector<string> &args) {
@@ -76,7 +78,6 @@ void Application::render(float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glClearColor(.12f, .34f, .56f, 1.0f);
     glStencilMask(0x00);
-
     // Create MVP matrices
     MatrixStack M;
     float aspect = width / (float) height;
@@ -96,8 +97,17 @@ void Application::render(float dt) {
         portals[i].draw(M);
     }
 
-    // Render scene through portals
+    // Render portal outline
     glStencilMask(0x00);
+    //glDisable(GL_DEPTH_TEST);
+
+    for (int i = 0; i < portals.size(); i++) {
+        glStencilFunc(GL_NOTEQUAL, i + 1, 0xFF);
+        portals[i].drawOutline(M);
+    }
+
+    //glEnable(GL_DEPTH_TEST);
+    // Render scene through portals
     for (int i = 0; i < portals.size(); i++) {
         glStencilFunc(GL_EQUAL, i + 1, 0xFF);
         glClear(GL_DEPTH_BUFFER_BIT);
