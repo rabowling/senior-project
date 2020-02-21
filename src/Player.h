@@ -7,7 +7,6 @@
 class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCallback
 {
     public:
-        enum PlayerRaycastType { PICK_UP, FIRE_PORTAL };
         void update(float dt);
         void init();
         void setPosition(float x, float y, float z);
@@ -32,4 +31,7 @@ class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCall
         float jumpSpeed = 10;
         float radius = 1;
         float height = 2;
+        
+        enum RaycastMode { PICK_UP, FIRE_PORTAL };
+        RaycastMode raycastMode;
 };

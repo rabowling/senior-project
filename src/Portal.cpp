@@ -6,7 +6,7 @@
 using namespace glm;
 
 void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
-    glm::vec3 lookDir = vec3(mat4_cast(orientation) * vec4(forward, 0));
+    glm::vec3 lookDir = vec3(mat4_cast(orientation) * vec4(localForward, 0));
     this->position = position;
     this->orientation = orientation;
     camera.init(position, lookDir, getUp());
@@ -40,11 +40,11 @@ void Portal::linkPortal(Portal *other) {
 }
 
 vec3 Portal::getUp() {
-    return vec3(mat4_cast(orientation) * vec4(up, 0));
+    return vec3(mat4_cast(orientation) * vec4(localUp, 0));
 }
 
 vec3 Portal::getForward() {
-    return vec3(mat4_cast(orientation) * vec4(forward, 0));
+    return vec3(mat4_cast(orientation) * vec4(localForward, 0));
 }
 
 // https://aras-p.info/texts/obliqueortho.html

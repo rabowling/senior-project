@@ -3,8 +3,10 @@
 #include <vector>
 #include <dirent.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <PxPhysicsAPI.h>
 
+using namespace glm;
 using namespace physx;
 
 std::vector<std::string> listDir(std::string dir) {
@@ -24,6 +26,10 @@ std::vector<std::string> listDir(std::string dir) {
 
 physx::PxVec3 glm2px(glm::vec3 v) {
     return PxVec3(v.x, v.y, v.z);
+}
+
+glm::vec3 px2glm(physx::PxVec3 v) {
+    return glm::vec3(v.x, v.y, v.z);
 }
 
 glm::vec3 px2glm(physx::PxExtendedVec3 v) {

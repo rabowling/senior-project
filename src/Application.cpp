@@ -106,6 +106,13 @@ void Application::render(float dt) {
         mat4 portalV = linkedPortal->camera.getLookAt();
         mat4 portalP = linkedPortal->modifyProjectionMatrix(P, portalV);
         drawScene(portalP, portalV, linkedPortal->camera);
+
+        shaderManager.bind("portal");
+        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(portalP));
+        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(portalV));
+        for (Portal &portal : portals) {
+            portal.draw(M);
+        }
     }
 }
 

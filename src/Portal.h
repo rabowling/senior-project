@@ -22,9 +22,9 @@ public:
     std::string model = "portal";
     Camera camera;
     Portal *linkedPortal;
+    glm::vec3 localForward = glm::vec3(0, 1, 0);
+    glm::vec3 localUp = glm::vec3(0, 0, -1);
 private:
-    glm::vec3 forward = glm::vec3(0, 1, 0);
-    glm::vec3 up = glm::vec3(0, 0, -1);
     glm::vec3 position;
     glm::vec3 scale;
     glm::vec3 color = glm::vec3(1, 1, 1);

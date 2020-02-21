@@ -7,4 +7,5 @@
 
 std::vector<std::string> listDir(std::string dir);
 physx::PxVec3 glm2px(glm::vec3 v);
+glm::vec3 px2glm(physx::PxVec3 v);
 glm::vec3 px2glm(physx::PxExtendedVec3 v);

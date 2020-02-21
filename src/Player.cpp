@@ -6,9 +6,11 @@
 #include "Physics.h"
 #include <PxPhysicsAPI.h>
 #include <cmath>
+#include <glm/glm.hpp>
 
 using namespace std;
 using namespace physx;
+using namespace glm;
 
 void Player::onShapeHit(const PxControllerShapeHit &hit) {
     if (hit.actor->is<PxRigidDynamic>()) {
@@ -105,8 +107,9 @@ void Player::update(float dt) {
             // Perform raycast
             PxRaycastBuffer hit;
             PxReal maxDist = 50.0;
-            bool success = mScene->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT), PxQueryFilterData(PxFilterData(PICK_UP, 0, 0, 0),
-                PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), this);
+            raycastMode = PICK_UP;
+            bool success = mScene->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
+                PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), this);
             if (success) {
                 if (hit.block.actor->is<PxRigidBody>()) {
                     heldItem = static_cast<PxRigidBody *>(hit.block.actor);
@@ -128,18 +131,41 @@ void Player::update(float dt) {
 
         heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);
     }
+
+    // Fire portals
+    if (app.controls.isPressed(Controls::PRIMARY_FIRE) || app.controls.isPressed(Controls::SECONDARY_FIRE)) {
+        origin = glm2px(camera.eye);
+        unitDir = glm2px(camera.lookAtPoint - camera.eye);
+        unitDir.normalize();
+        origin += unitDir;
+
+        PxRaycastBuffer hit;
+        PxReal maxDist = 100.0;
+        raycastMode = FIRE_PORTAL;
+        bool success = mScene->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
+            PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER)), this);
+        if (success) {
+            Portal *portal = app.controls.isPressed(Controls::PRIMARY_FIRE) ? &app.portals[0] : &app.portals[1];
+            vec3 newPos = px2glm(hit.block.position + hit.block.normal * 0.1);
+            vec3 cameraRight = cross(px2glm(unitDir), camera.upVec);
+            vec3 portalUp = cross(px2glm(hit.block.normal), cameraRight);
+            quat newRot = quatLookAt(px2glm(hit.block.normal), portalUp)
+                * angleAxis((float) M_PI_2, cross(portal->localForward, portal->localUp));
+            portal->setPosition(newPos, newRot);
+        }
+    }
 }
 
 // Filter raycast
 PxQueryHitType::Enum Player::preFilter(const PxFilterData &filterData, const PxShape *shape, const PxRigidActor *actor, PxHitFlags &queryFlags)
 {
-    if (filterData.word0 == PICK_UP) {
+    if (raycastMode == PICK_UP) {
         if (mController->getActor() == actor) {
             return PxQueryHitType::eNONE;
         }
     }
-    else if (filterData.word0 == FIRE_PORTAL) {
-        if (!actor->is<PxRigidStatic>()) {
+    else if (raycastMode == FIRE_PORTAL) {
+        if (mController->getActor() == actor) {
             return PxQueryHitType::eNONE;
         }
     }
