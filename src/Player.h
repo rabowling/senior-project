@@ -4,15 +4,20 @@
 #include "Camera.h"
 #include <PxPhysicsAPI.h>
 
-class Player : public physx::PxUserControllerHitReport {
+class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCallback
+{
     public:
+        enum PlayerRaycastType { PICK_UP, FIRE_PORTAL };
         void update(float dt);
         void init();
         void setPosition(float x, float y, float z);
         
         virtual void onShapeHit(const physx::PxControllerShapeHit &hit);
-        virtual void onControllerHit(const physx::PxControllersHit &hit);
-        virtual void onObstacleHit(const physx::PxControllerObstacleHit &hit);
+        virtual void onControllerHit(const physx::PxControllersHit &hit) {}
+        virtual void onObstacleHit(const physx::PxControllerObstacleHit &hit) {}
+        virtual physx::PxQueryHitType::Enum preFilter(const physx::PxFilterData &filterData, const physx::PxShape *shape,
+            const physx::PxRigidActor *actor, physx::PxHitFlags &queryFlags);
+        virtual physx::PxQueryHitType::Enum postFilter(const physx::PxFilterData &filterData, const physx::PxQueryHit &hit) {}
         Camera camera;
     private:
         physx::PxController *mController;
@@ -25,4 +30,6 @@ class Player : public physx::PxUserControllerHitReport {
         float mWalkSpeed = 5.0f;
         physx::PxRigidBody *heldItem = NULL;
         float jumpSpeed = 10;
+        float radius = 1;
+        float height = 2;
 };

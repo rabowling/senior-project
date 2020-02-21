@@ -32,20 +32,12 @@ void Player::setPosition(float x, float y, float z) {
     mController->setFootPosition(PxExtendedVec3(x, y, z));
 }
 
-void Player::onControllerHit(const PxControllersHit &hit) {
-
-}
-
-void Player::onObstacleHit(const PxControllerObstacleHit &hit) {
-
-}
-
 void Player::init() {
     PxCapsuleControllerDesc desc;
 
     // We can tweak these as necessary
-    desc.radius = 1.0f;
-    desc.height = 3.0f;
+    desc.radius = radius;
+    desc.height = height;
     desc.position = PxExtendedVec3(20,4,45);
     desc.material = app.physics.getPhysics()->createMaterial(0.3f,0.3f,0.3f);
     desc.reportCallback = this;
@@ -58,11 +50,12 @@ void Player::init() {
 }
 
 void Player::update(float dt) {
-    camera.update(px2glm(mController->getPosition()), app.controls.getMouseDeltaX(), app.controls.getMouseDeltaY());
-    glm::vec3 lookAt = camera.lookAtPoint;
-    PxVec3 direction = PxExtendedVec3(lookAt.x, lookAt.y, lookAt.z) - mController->getPosition();
+    camera.update(px2glm(mController->getPosition()) + glm::vec3(0, height / 2, 0),
+        app.controls.getMouseDeltaX(), app.controls.getMouseDeltaY());
+
+    PxVec3 direction = glm2px(camera.lookAtPoint - camera.eye);
     direction.y = 0.0f;
-    PxVec3 up = PxVec3(0.0f,1.0f,0.0f);
+    PxVec3 up = glm2px(camera.upVec);
     PxVec3 right = direction.cross(up);
     direction.normalize();
     right.normalize();
@@ -103,22 +96,18 @@ void Player::update(float dt) {
     // Check for picking up item
     if (app.controls.isPressed(Controls::USE)) {
         if (!heldItem) {
-            PxRaycastBuffer hit;
-            bool status;
-            PxExtendedVec3 pos;
-            PxVec3 *upForce = new PxVec3(0, 10.0f, 0);
-            PxReal maxDist = 50.0;
-
             // Calculate origin and direction vectors
-            pos = mController->getPosition();
-            origin = PxVec3(pos.x, pos.y, pos.z);
-            unitDir = PxExtendedVec3(lookAt.x, lookAt.y, lookAt.z) - mController->getPosition();
+            origin = glm2px(camera.eye);
+            unitDir = glm2px(camera.lookAtPoint - camera.eye);
             unitDir.normalize();
             origin += unitDir;
 
             // Perform raycast
-            status = mScene->raycast(origin, unitDir, maxDist, hit);
-            if (status) {
+            PxRaycastBuffer hit;
+            PxReal maxDist = 50.0;
+            bool success = mScene->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT), PxQueryFilterData(PxFilterData(PICK_UP, 0, 0, 0),
+                PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), this);
+            if (success) {
                 if (hit.block.actor->is<PxRigidBody>()) {
                     heldItem = static_cast<PxRigidBody *>(hit.block.actor);
                     heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
@@ -134,10 +123,26 @@ void Player::update(float dt) {
     // Move held item in front of player
     if (heldItem != NULL) {
         float holdDistance = 5.f;
-        PxVec3 targetLocation = glm2px(camera.eye + holdDistance * (lookAt - camera.eye));
+        PxVec3 targetLocation = glm2px(camera.eye + holdDistance * (camera.lookAtPoint - camera.eye));
         PxVec3 vectorToTargetLocation = targetLocation - heldItem->getGlobalPose().p;
 
         heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);
     }
 }
 
+// Filter raycast
+PxQueryHitType::Enum Player::preFilter(const PxFilterData &filterData, const PxShape *shape, const PxRigidActor *actor, PxHitFlags &queryFlags)
+{
+    if (filterData.word0 == PICK_UP) {
+        if (mController->getActor() == actor) {
+            return PxQueryHitType::eNONE;
+        }
+    }
+    else if (filterData.word0 == FIRE_PORTAL) {
+        if (!actor->is<PxRigidStatic>()) {
+            return PxQueryHitType::eNONE;
+        }
+    }
+    
+    return PxQueryHitType::eBLOCK;
+}
