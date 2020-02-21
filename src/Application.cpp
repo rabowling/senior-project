@@ -91,6 +91,7 @@ void Application::render(float dt) {
     shaderManager.bind("portal");
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V));
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P));
+    glUniform3f(shaderManager.getUniform("outlinecolor"), 0, 1, 1);
     glStencilMask(0xFF);
     for (int i = 0; i < portals.size(); i++) {
         glStencilFunc(GL_ALWAYS, i + 1, 0xFF);
