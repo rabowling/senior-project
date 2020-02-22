@@ -25,9 +25,8 @@ void Portal::drawOutline(MatrixStack &M) {
     M.pushMatrix();
     M.translate(position);
     M.rotate(orientation);
-    M.scale(1.05);
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-    app.modelManager.draw(model);
+    app.modelManager.draw("portal_outline");
     M.popMatrix();
 }
 
