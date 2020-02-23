@@ -82,7 +82,7 @@ void Application::render(float dt) {
     MatrixStack M;
     float aspect = width / (float) height;
     mat4 V = player.camera.getLookAt();
-    mat4 P = glm::perspective(45.0f, aspect, 0.01f, 100.0f);
+    mat4 P = glm::perspective(45.0f, aspect, 0.1f, 100.0f);
 
     // Render entire scene
     drawScene(P, V, player.camera);
@@ -93,6 +93,8 @@ void Application::render(float dt) {
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P));
     glUniform3f(shaderManager.getUniform("outlinecolor"), 0, 1, 1);
     glStencilMask(0xFF);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(-1.0, -1.0);
     for (int i = 0; i < portals.size(); i++) {
         glStencilFunc(GL_ALWAYS, i + 1, 0xFF);
         portals[i].draw(M);
@@ -106,6 +108,8 @@ void Application::render(float dt) {
         glStencilFunc(GL_NOTEQUAL, i + 1, 0xFF);
         portals[i].drawOutline(M);
     }
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
 
     //glEnable(GL_DEPTH_TEST);
     // Render scene through portals
@@ -121,9 +125,12 @@ void Application::render(float dt) {
         shaderManager.bind("portal");
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(portalP));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(portalV));
+        glEnable(GL_POLYGON_OFFSET_FILL);
         for (Portal &portal : portals) {
             portal.draw(M);
         }
+        glDisable(GL_POLYGON_OFFSET_FILL);
+
     }
 }
 

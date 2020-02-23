@@ -146,7 +146,7 @@ void Player::update(float dt) {
             PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER)), this);
         if (success) {
             Portal *portal = app.controls.isPressed(Controls::PRIMARY_FIRE) ? &app.portals[0] : &app.portals[1];
-            vec3 newPos = px2glm(hit.block.position + hit.block.normal * 0.1);
+            vec3 newPos = px2glm(hit.block.position);
             vec3 cameraRight = cross(px2glm(unitDir), camera.upVec);
             vec3 portalUp = cross(px2glm(hit.block.normal), cameraRight);
             quat newRot = quatLookAt(px2glm(hit.block.normal), portalUp)
