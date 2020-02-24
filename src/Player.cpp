@@ -76,6 +76,10 @@ void Player::update(float dt) {
     if (app.controls.isHeld(Controls::LEFT)) {
         sSpeed -= mWalkSpeed;
     }
+    if (app.controls.isHeld(Controls::SPRINT)) {
+        fSpeed *= 2.0f;
+        sSpeed *= 2.0f;
+    }
 
     // Move character controller
     PxVec3 displacement = ((direction * fSpeed) + (right * sSpeed)) * dt;

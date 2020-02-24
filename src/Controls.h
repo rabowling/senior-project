@@ -8,7 +8,7 @@
 class Controls
 {
 public:
-    enum InputEvent {PRIMARY_FIRE, SECONDARY_FIRE, USE, JUMP, FORWARD, BACKWARD, LEFT, RIGHT};
+    enum InputEvent {PRIMARY_FIRE, SECONDARY_FIRE, USE, JUMP, FORWARD, BACKWARD, LEFT, RIGHT, SPRINT};
     enum InputMode {NORMAL, RECORD, PLAYBACK};
     struct InputFrame {
         int frame;

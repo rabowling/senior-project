@@ -42,6 +42,9 @@ void Controls::update() {
         if (glfwGetKey(handle, GLFW_KEY_E) == GLFW_PRESS) {
             handleEvent(USE);
         }
+        if (glfwGetKey(handle, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            handleEvent(SPRINT);
+        }
         if (glfwGetMouseButton(handle, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
             handleEvent(PRIMARY_FIRE);
         }
