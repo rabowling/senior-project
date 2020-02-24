@@ -3,7 +3,7 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/src/",
                 "${workspaceFolder}/ext/tiny_obj_loader",
                 "${workspaceFolder}/ext/glad/include",
                 "${workspaceFolder}/ext/stb_image",
