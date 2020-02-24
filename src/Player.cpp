@@ -49,6 +49,13 @@ void Player::init() {
     velocity = PxVec3(0);
     camera.init(px2glm(desc.position), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
     mScene = app.physics.getScene();
+
+    // Create and link player-controlled portals
+    app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
+    app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
+    portals[0] = &app.portals[app.portals.size() - 2];
+    portals[1] = &app.portals[app.portals.size() - 1];
+    portals[0]->linkPortal(portals[1]);
 }
 
 void Player::update(float dt) {

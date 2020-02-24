@@ -2,6 +2,7 @@
 #include "Physics.h"
 #include "WindowManager.h"
 #include "Camera.h"
+#include "Portal.h"
 #include <PxPhysicsAPI.h>
 
 class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCallback
@@ -18,6 +19,7 @@ class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCall
             const physx::PxRigidActor *actor, physx::PxHitFlags &queryFlags);
         virtual physx::PxQueryHitType::Enum postFilter(const physx::PxFilterData &filterData, const physx::PxQueryHit &hit) {}
         Camera camera;
+        Portal *portals[2] = { nullptr, nullptr };
     private:
         physx::PxController *mController;
         physx::PxScene *mScene;

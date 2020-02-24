@@ -16,6 +16,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+#define MAX_PORTALS 256
+
 class Application
 {
 public:

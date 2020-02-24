@@ -5,6 +5,18 @@
 
 using namespace glm;
 
+Portal::Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model) :
+    scale(scale), model(model), hasOutline(false)
+{
+    setPosition(position, orientation);
+}
+
+Portal::Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model, std::string outlineModel) :
+    scale(scale), model(model), outlineModel(outlineModel), hasOutline(true)
+{
+    setPosition(position, orientation);
+}
+
 void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
     glm::vec3 lookDir = vec3(mat4_cast(orientation) * vec4(localForward, 0));
     this->position = position;
@@ -16,17 +28,23 @@ void Portal::draw(MatrixStack &M) {
     M.pushMatrix();
     M.translate(position);
     M.rotate(orientation);
+    M.scale(scale);
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
     app.modelManager.draw(model);
     M.popMatrix();
 }
 
 void Portal::drawOutline(MatrixStack &M) {
+    if (!hasOutline) {
+        return;
+    }
+    
     M.pushMatrix();
     M.translate(position);
     M.rotate(orientation);
+    M.scale(scale);
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-    app.modelManager.draw("portal_outline");
+    app.modelManager.draw(outlineModel);
     M.popMatrix();
 }
 

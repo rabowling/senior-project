@@ -22,6 +22,7 @@ void Application::run(const vector<string> &args) {
     // init
     windowManager.init(1280, 720);
     physics.init();
+    portals.reserve(MAX_PORTALS);
     player.init();
 
     if (args.size() == 1) {
@@ -239,6 +240,8 @@ void Application::initGeom() {
     ifstream in;
     in.open("../resources/levels/level1.txt");
     string line;
+    vector<int> portalIds;
+    int initialPortals = portals.size();
     while (getline(in, line)) {
         istringstream iss(line);
         string type;
@@ -263,20 +266,35 @@ void Application::initGeom() {
             player.setPosition(data[0], data[1], data[2]);
         }
         else if (type == "portal") {
-            float data[7];
-            for (int i = 0; i < 7; i++) {
-                iss >> data[i];
+            int intData[2];
+            float floatData[10];
+            for (int i = 0; i < 2; i++) {
+                iss >> intData[i];
                 iss.ignore();
             }
-            vec3 pos = glm::vec3(data[0], data[1], data[2]);
-            quat rot = glm::quat(data[3], data[4], data[5], data[6]);
-            Portal portal;
-            portal.open = true;
-            portal.setPosition(pos, rot);
-            portals.push_back(portal);
+            for (int i = 0; i < 10; i++) {
+                iss >> floatData[i];
+                iss.ignore();
+            }
+            vec3 pos = glm::vec3(floatData[0], floatData[1], floatData[2]);
+            vec3 scale = glm::vec3(floatData[3], floatData[4], floatData[5]);
+            quat rot = glm::quat(floatData[6], floatData[7], floatData[8], floatData[9]);
+            portals.push_back(Portal(pos, scale, rot, "world_portal"));
+            Portal *portal = &portals[portals.size() - 1];
+            portal->setPosition(pos, rot);
+
+            // link portals
+            int linkedPortalId = intData[1];
+            for (int i = 0; i < portalIds.size(); i++) {
+                if (portalIds[i] == linkedPortalId) {
+                    portal->linkPortal(&portals[i+initialPortals]);
+                    break;
+                }
+            }
+
+            portalIds.push_back(intData[0]);
         }
     }
-    portals[0].linkPortal(&portals[1]);
     in.close();
 }
 
