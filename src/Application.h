@@ -12,6 +12,7 @@
 #include "Controls.h"
 #include "Wall.h"
 #include "Portal.h"
+#include "Box.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -36,12 +37,11 @@ public:
 
     physx::PxRigidDynamic *gBox = NULL;
     physx::PxRigidDynamic *gBox2 = NULL;
-    physx::PxRigidStatic *gGroundPlane = NULL;
     physx::PxRigidStatic *gButton = NULL;
     bool buttonPressed = false;
 
     std::vector<Portal> portals;
-
+    std::vector<Box> boxes;
     std::vector<Wall> walls;
 
     void run(const std::vector<std::string> &args);

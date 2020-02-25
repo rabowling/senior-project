@@ -141,34 +141,19 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
     shaderManager.bind("tex");
     textureManager.bind("marble", "Texture0");
 
-    M.pushMatrix();
-        M.loadIdentity();
+    glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
+    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+    glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
+    glUniform3f(shaderManager.getUniform("MatDif"), 0.396, 0.74151, 0.69102);
+    glUniform3f(shaderManager.getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
+    glUniform1f(shaderManager.getUniform("Shine"), 12.8);
+    glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
+    for (Box &box : boxes) {
+        box.draw(M);
+    }
 
-        // Draw spiders
-        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
-		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
-        glUniform3f(shaderManager.getUniform("MatDif"), 0.396, 0.74151, 0.69102);
-        glUniform3f(shaderManager.getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
-        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
-        glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
-        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
-        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
-
-        PxTransform t = gBox->getGlobalPose();
-        M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        M.scale(2);
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-        modelManager.draw("cube");
-    M.popMatrix();
-    M.pushMatrix();
-        t = gBox2->getGlobalPose();
-        M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-        modelManager.draw("cube");
-    M.popMatrix();
     M.pushMatrix();
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
 		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
@@ -183,7 +168,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
-        t = gButton->getGlobalPose();
+        PxTransform t = gButton->getGlobalPose();
         M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
         M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
         glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
@@ -208,29 +193,8 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
 }
 
 void Application::initGeom() {
-
-    // Physics ground plane
-    PxMaterial *material = physics.getPhysics()->createMaterial(0.3f, 0.3f, 0.3f);
-    //gGroundPlane = PxCreatePlane(*(physics.getPhysics()), PxPlane(0, 1, 0, 0), *material);
-    //physics.getScene()->addActor(*gGroundPlane);
-
-    // Physics box
-    PxShape *shape = physics.getPhysics()->createShape(PxBoxGeometry(2, 2, 2), *material);
-    gBox = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(10, 10, 25)));
-    gBox->attachShape(*shape);
-    PxRigidBodyExt::updateMassAndInertia(*gBox, 10.0f);
-    physics.getScene()->addActor(*gBox);
-    shape->release();
-
-    PxShape *shape2 = physics.getPhysics()->createShape(PxBoxGeometry(1, 1, 1), *material);
-    gBox2 = physics.getPhysics()->createRigidDynamic(PxTransform(PxVec3(15, 10, 35)));
-    gBox2->attachShape(*shape2);
-    PxRigidBodyExt::updateMassAndInertia(*gBox2, 10.0f);
-    physics.getScene()->addActor(*gBox2);
-    shape2->release();
-
     // Button
-    PxShape *shape3 = physics.getPhysics()->createShape(PxBoxGeometry(1, 0.4, 1), *material);
+    PxShape *shape3 = physics.getPhysics()->createShape(PxBoxGeometry(1, 0.4, 1), *physics.defaultMaterial);
     gButton = physics.getPhysics()->createRigidStatic(PxTransform(PxVec3(13, 0.4, 40)));
     gButton->attachShape(*shape3);
     physics.getScene()->addActor(*gButton);
@@ -293,6 +257,18 @@ void Application::initGeom() {
             }
 
             portalIds.push_back(intData[0]);
+        }
+        else if (type == "box") {
+            float data[10];
+            for (int i = 0; i < 10; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            PxVec3 pos(data[0], data[1], data[2]);
+            PxVec3 scale(data[3], data[4], data[5]);
+            PxQuat rot(data[6], data[7], data[8], data[9]);
+            boxes.push_back(Box());
+            boxes.rbegin()->init(pos, scale, rot);
         }
     }
     in.close();

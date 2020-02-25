@@ -18,6 +18,8 @@ public:
     virtual void onWake(physx::PxActor** , physx::PxU32 ) {}
     virtual void onSleep(physx::PxActor** , physx::PxU32 ){}
     virtual void onAdvance(const physx::PxRigidBody*const*, const physx::PxTransform*, const physx::PxU32) {}
+
+    physx::PxMaterial *defaultMaterial;
 private:
     physx::PxDefaultAllocator mAllocator;
     physx::PxDefaultErrorCallback mErrorCallback;

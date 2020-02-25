@@ -55,6 +55,8 @@ void Physics::init() {
     }
 
     mManager = PxCreateControllerManager(*mScene);
+
+    defaultMaterial = mPhysics->createMaterial(0.3f, 0.3f, 0.3f);
 }
 
 PxScene *Physics::getScene() {
