@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <string>
 #include "Program.h"
+#include "GeometryProgram.h"
 
 class ShaderManager
 {
@@ -24,4 +25,5 @@ struct ShaderPair
 {
     std::string vert;
     std::string frag;
+    std::string geom;
 };

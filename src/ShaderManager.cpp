@@ -20,6 +20,7 @@ void ShaderManager::loadShaders(std::string dir) {
                 ShaderPair pair;
                 pair.vert = "";
                 pair.frag = "";
+                pair.geom = "";
                 shaderMap[shaderName] = pair;
             }
             if (shaderType == "_vert.glsl") {
@@ -27,14 +28,25 @@ void ShaderManager::loadShaders(std::string dir) {
             }
             else if (shaderType == "_frag.glsl") {
                 shaderMap[shaderName].frag = dir + "/" + file;
+            } 
+            else if (shaderType == "_geom.glsl") {
+                shaderMap[shaderName].geom = dir + "/" + file;
             }
         }
     }
 
     for (pair<string, ShaderPair> shaderPair : shaderMap) {
-        if (!shaderPair.second.vert.empty() && !shaderPair.second.frag.empty()) {
+        if (!shaderPair.second.vert.empty() && !shaderPair.second.frag.empty() && shaderPair.second.geom.empty()) {
             Program shader;
             shader.setShaderNames(shaderPair.second.vert, shaderPair.second.frag);
+            if (shader.init()) {
+                shaders[shaderPair.first] = shader;
+                cout << "Loaded shader: " << shaderPair.first << endl;
+            }
+        } 
+        else if (!shaderPair.second.vert.empty() && !shaderPair.second.frag.empty() && !shaderPair.second.geom.empty()) {
+            GeometryProgram shader;
+            shader.setShaderNames(shaderPair.second.vert, shaderPair.second.frag, shaderPair.second.geom);
             if (shader.init()) {
                 shaders[shaderPair.first] = shader;
                 cout << "Loaded shader: " << shaderPair.first << endl;
