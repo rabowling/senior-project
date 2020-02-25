@@ -21,34 +21,19 @@ in vec3 fragPos;
 
 float ShadowCalculation(vec3 pos)
 {
-	float shadow = 0.0;
-	float bias = 0.15;
-	int samples = 20;
-	float viewDistance = length(viewPos - pos);
-	float diskRadius = (1.0 + (viewDistance / farPlane)) / 25.0;  
-	vec3 fragToLight = pos - lightPos;
-	float currentDepth = length(fragToLight);
+	// get vector between fragment position and light position
+    vec3 fragToLight = pos - lightPos;
+    // use the light to fragment vector to sample from the depth map    
+    float closestDepth = texture(depthMap, fragToLight).r;
+    // it is currently in linear range between [0,1]. Re-transform back to original value
+    closestDepth *= farPlane;
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    // now test for shadows
+    float bias = max(0.05 * (1.0 - dot(fragNor, normalize(fragToLight))), 0.005); 
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
-	vec3 sampleOffsetDirections[20] = vec3[]
-	(
-   		vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
-   		vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
-   		vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
-   		vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-   		vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
-	);
-
-	for (int i = 0; i < samples; i++)
-	{
-		float closestDepth = texture(depthMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
-		closestDepth *= farPlane;
-		if (currentDepth - bias > closestDepth)
-		{
-			shadow += 1.0;
-		}
-	}
-	shadow /= float(samples);
-	return shadow;
+    return shadow;
 }
 
 void main()

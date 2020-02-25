@@ -100,7 +100,7 @@ void Application::render(float dt) {
     drawScene(P, V, player.camera, false);
 
     // Draw geometry of portals to stencil buffer
-    /*shaderManager.bind("portal");
+    shaderManager.bind("portal");
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V));
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P));
     glUniform3f(shaderManager.getUniform("outlinecolor"), 0, 1, 1);
@@ -143,7 +143,7 @@ void Application::render(float dt) {
         }
         glDisable(GL_POLYGON_OFFSET_FILL);
 
-    }*/
+    }
 }
 
 void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &camera) {
@@ -172,7 +172,9 @@ void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &ca
     glUniform1f(shaderManager.getUniform("farPlane"), far);
     glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 
+    glCullFace(GL_FRONT);
     drawScene(P, V, camera, true);
+    glCullFace(GL_BACK);
 }
 
 void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, const bool isCubemap) {
@@ -204,7 +206,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.01, 0.018725, 0.01745);
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
         glUniform1f(shaderManager.getUniform("Shine"), 12.8);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
@@ -232,7 +234,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 	    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform1f(shaderManager.getUniform("farPlane"), far);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.19225, 0.19225, 0.19225);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.019225, 0.019225, 0.019225);
         glUniform3f(shaderManager.getUniform("MatDif"), 0.50754, 0.50754, 0.50754);
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.508273, 0.508273, 0.508273);
         glUniform1f(shaderManager.getUniform("Shine"), 51.2);
