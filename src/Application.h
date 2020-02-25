@@ -18,6 +18,9 @@
 
 #define MAX_PORTALS 256
 
+const unsigned int SHADOW_WIDTH = 1024;
+const unsigned int SHADOW_HEIGHT = 1024;
+
 class Application
 {
 public:
@@ -44,11 +47,19 @@ public:
 
     std::vector<Wall> walls;
 
+    unsigned int depthCubemap;
+    unsigned int depthMapFBO;
+    glm::vec3 lightPos;
+    float near = 1.0f;
+    float far = 100.0f;
+
     void run(const std::vector<std::string> &args);
 private:
     void render(float dt);
-    void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
+    void renderToCubemap(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
+    void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera, const bool isCubemap);
     void initGeom();
+    void initCubemap();
     void makeWall(physx::PxVec3 pos, physx::PxVec3 size, physx::PxQuat rot);
 };
 

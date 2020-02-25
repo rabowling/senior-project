@@ -30,6 +30,9 @@ public:
 	GLint getAttribute(const std::string &name) const;
 	GLint getUniform(const std::string &name) const;
 
+	void findUniformsAndAttributes();
+	GLuint pid = 0;
+
 protected:
 
 	std::string vShaderName;
@@ -37,8 +40,6 @@ protected:
 
 private:
 
-	void findUniformsAndAttributes();
-	GLuint pid = 0;
 	std::map<std::string, GLint> attributes;
 	std::map<std::string, GLint> uniforms;
 	bool verbose = true;

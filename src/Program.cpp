@@ -125,7 +125,7 @@ GLint Program::getAttribute(const std::string &name) const
 	{
 		if (isVerbose())
 		{
-			std::cout << name << " is not an attribute variable" << std::endl;
+			//std::cout << name << " is not an attribute variable" << std::endl;
 		}
 		return -1;
 	}
@@ -139,7 +139,7 @@ GLint Program::getUniform(const std::string &name) const
 	{
 		if (isVerbose())
 		{
-			std::cout << name << " is not a uniform variable" << std::endl;
+			//std::cout << name << " is not a uniform variable" << std::endl;
 		}
 		return -1;
 	}
@@ -165,7 +165,7 @@ void Program::findUniformsAndAttributes() {
 		}
 		else {
 			for (int i = 0; i < arraySize; i++) {
-				addAttribute(name + "[" + std::to_string(i) + "]");
+				addAttribute(name.substr(0, name.length()-3) + "[" + std::to_string(i) + "]");
 			}
 		}
 	}
@@ -183,7 +183,7 @@ void Program::findUniformsAndAttributes() {
 		}
 		else {
 			for (int i = 0; i < arraySize; i++) {
-				addUniform(name + "[" + std::to_string(i) + "]");
+				addUniform(name.substr(0, name.length()-3) + "[" + std::to_string(i) + "]");
 			}
 		}
 	}

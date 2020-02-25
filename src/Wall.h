@@ -9,7 +9,7 @@ class Wall {
     public:
         Wall();
         void init(physx::PxVec3 position, physx::PxVec3 size, physx::PxQuat orientation, Physics physics);
-        void draw(MatrixStack &M);
+        void draw(MatrixStack &M, const bool isCubemap);
     
     private:
         physx::PxVec3 size;
