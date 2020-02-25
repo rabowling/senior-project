@@ -51,7 +51,7 @@ void Application::run(const vector<string> &args) {
     textureManager.loadTextures("../resources/textures");
     modelManager.loadModels("../resources/models");
 
-    lightPos = vec3(10, 3, 20);
+    lightPos = vec3(30, 8, 30);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -80,6 +80,25 @@ void Application::render(float dt) {
     float aspect = width / (float) height;
     mat4 V = player.camera.getLookAt();
     mat4 P = glm::perspective(45.0f, aspect, 0.1f, 100.0f);
+
+    if (controls.isHeld(Controls::LIGHT_FORWARD)) {
+        lightPos += vec3(0,0,-1) * dt * lightSpeed;
+    }
+    if (controls.isHeld(Controls::LIGHT_BACKWARD)) {
+        lightPos += vec3(0,0,1) * dt * lightSpeed;
+    }
+    if (controls.isHeld(Controls::LIGHT_LEFT)) {
+        lightPos += vec3(-1,0,0) * dt * lightSpeed;
+    }
+    if (controls.isHeld(Controls::LIGHT_RIGHT)) {
+        lightPos += vec3(1,0,0) * dt * lightSpeed;
+    }
+    if (controls.isHeld(Controls::LIGHT_UP)) {
+        lightPos += vec3(0,1,0) * dt * lightSpeed;
+    }
+    if (controls.isHeld(Controls::LIGHT_DOWN)) {
+        lightPos += vec3(0,-1,0) * dt * lightSpeed;
+    }
 
     renderToCubemap(P, V, player.camera);
 
@@ -187,7 +206,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
+        glUniform3f(shaderManager.getUniform("MatAmb"), 0.01, 0.018725, 0.01745);
         glUniform3f(shaderManager.getUniform("MatDif"), 0.396, 0.74151, 0.69102);
         glUniform3f(shaderManager.getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
         glUniform1f(shaderManager.getUniform("Shine"), 12.8);

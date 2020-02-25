@@ -49,6 +49,7 @@ public:
     glm::vec3 lightPos;
     float near = 1.0f;
     float far = 100.0f;
+    float lightSpeed = 5.0f;
 
     void run(const std::vector<std::string> &args);
 private:

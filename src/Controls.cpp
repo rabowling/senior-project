@@ -51,6 +51,24 @@ void Controls::update() {
         if (glfwGetMouseButton(handle, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
             handleEvent(SECONDARY_FIRE);
         }
+        if (glfwGetKey(handle, GLFW_KEY_UP) == GLFW_PRESS) {
+            handleEvent(LIGHT_FORWARD);
+        }
+        if (glfwGetKey(handle, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            handleEvent(LIGHT_BACKWARD);
+        }
+        if (glfwGetKey(handle, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            handleEvent(LIGHT_LEFT);
+        }
+        if (glfwGetKey(handle, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            handleEvent(LIGHT_RIGHT);
+        }
+        if (glfwGetKey(handle, GLFW_KEY_Q) == GLFW_PRESS) {
+            handleEvent(LIGHT_UP);
+        }
+        if (glfwGetKey(handle, GLFW_KEY_Z) == GLFW_PRESS) {
+            handleEvent(LIGHT_DOWN);
+        }
 
         for (InputEvent e : prevHeld) {
             if (held.find(e) == held.end()) {
