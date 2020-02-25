@@ -7,8 +7,7 @@
 
 class Wall {
     public:
-        Wall();
-        void init(physx::PxVec3 position, physx::PxVec3 size, physx::PxQuat orientation, Physics physics);
+        void init(physx::PxVec3 position, physx::PxVec3 size, physx::PxQuat orientation);
         void draw(MatrixStack &M);
     
     private:

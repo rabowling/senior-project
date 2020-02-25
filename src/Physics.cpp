@@ -1,6 +1,7 @@
 #include "Physics.h"
 #include <iostream>
 #include "Application.h"
+#include "Button.h"
 
 using namespace physx;
 
@@ -19,8 +20,17 @@ PxFilterFlags myFilterShader(
 }
 
 void Physics::onContact(const PxContactPairHeader& pairHeader, const PxContactPair* pairs, PxU32 nbPairs) {
-    if (pairHeader.actors[0] == app.gButton || pairHeader.actors[1] == app.gButton) {
-        app.buttonPressed = true;
+    for (int i = 0; i < 2; i++) {
+        PxActor *actor1 = pairHeader.actors[i];
+        PxActor *actor2 = pairHeader.actors[(i+1)%2];
+
+        if (actor1->userData != nullptr) {
+            for (Button &button : app.buttons) {
+                if (button.body == actor1) {
+                    static_cast<Button *>(actor1->userData)->onContact(actor2);
+                }
+            }
+        }
     }
 }
 

@@ -13,6 +13,7 @@
 #include "Wall.h"
 #include "Portal.h"
 #include "Box.h"
+#include "Button.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -35,21 +36,16 @@ public:
     float physicsStep;
     float deltaTime;
 
-    physx::PxRigidDynamic *gBox = NULL;
-    physx::PxRigidDynamic *gBox2 = NULL;
-    physx::PxRigidStatic *gButton = NULL;
-    bool buttonPressed = false;
-
     std::vector<Portal> portals;
     std::vector<Box> boxes;
+    std::vector<Button> buttons;
     std::vector<Wall> walls;
 
     void run(const std::vector<std::string> &args);
 private:
     void render(float dt);
     void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
-    void initGeom();
-    void makeWall(physx::PxVec3 pos, physx::PxVec3 size, physx::PxQuat rot);
+    void loadLevel(std::string levelFile);
 };
 
 extern Application app;

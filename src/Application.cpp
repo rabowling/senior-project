@@ -20,9 +20,13 @@ Application app;
 
 void Application::run(const vector<string> &args) {
     // init
+    portals.reserve(MAX_PORTALS);
+    buttons.reserve(32);
+    boxes.reserve(32);
+    walls.reserve(256);
+    
     windowManager.init(1280, 720);
     physics.init();
-    portals.reserve(MAX_PORTALS);
     player.init();
 
     if (args.size() == 1) {
@@ -41,7 +45,7 @@ void Application::run(const vector<string> &args) {
         }
     }
 
-    initGeom();
+    loadLevel("../resources/levels/level1.txt");
     shaderManager.loadShaders("../resources/shaders");
     textureManager.loadTextures("../resources/textures");
     modelManager.loadModels("../resources/models");
@@ -154,26 +158,22 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         box.draw(M);
     }
 
-    M.pushMatrix();
-        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
-		glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
-        if (buttonPressed) {
+    glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
+    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+    glUniform3f(shaderManager.getUniform("MatAmb"), 0.1, 0.18725, 0.1745);
+    glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
+    glUniform1f(shaderManager.getUniform("Shine"), 12.8);
+    glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
+    glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
+    glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
+    for (Button &button : buttons) {
+        if (button.pressed) {
             glUniform3f(shaderManager.getUniform("MatDif"), 1, 0, 0);
         } else {
             glUniform3f(shaderManager.getUniform("MatDif"), 1, 0.8, 0);
         }
-        glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
-        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
-        glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
-        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
-        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
-        PxTransform t = gButton->getGlobalPose();
-        M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
-        M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
-        glUniformMatrix4fv(shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-        modelManager.draw("cylinder");
-    M.popMatrix();
+        button.draw(M);
+    }
 
     // Set up wall shader colors here
     shaderManager.bind("wall");
@@ -192,15 +192,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
     }
 }
 
-void Application::initGeom() {
-    // Button
-    PxShape *shape3 = physics.getPhysics()->createShape(PxBoxGeometry(1, 0.4, 1), *physics.defaultMaterial);
-    gButton = physics.getPhysics()->createRigidStatic(PxTransform(PxVec3(13, 0.4, 40)));
-    gButton->attachShape(*shape3);
-    physics.getScene()->addActor(*gButton);
-    shape3->release();
-
-    // Load level file
+void Application::loadLevel(string levelFile) {
     ifstream in;
     in.open("../resources/levels/level1.txt");
     string line;
@@ -219,7 +211,8 @@ void Application::initGeom() {
             PxVec3 pos(data[0], data[1], data[2]);
             PxVec3 scale(data[3], data[4], data[5]);
             PxQuat rot(data[6], data[7], data[8], data[9]);
-            makeWall(pos, scale, rot);
+            walls.push_back(Wall());
+            walls.rbegin()->init(pos, scale, rot);
         }
         else if (type == "player") {
             float data[3];
@@ -270,12 +263,16 @@ void Application::initGeom() {
             boxes.push_back(Box());
             boxes.rbegin()->init(pos, scale, rot);
         }
+        else if (type == "button") {
+            float data[3];
+            for (int i = 0; i < 3; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            PxVec3 pos(data[0], data[1], data[2]);
+            buttons.push_back(Button());
+            buttons.rbegin()->init(pos);
+        }
     }
     in.close();
-}
-
-void Application::makeWall(PxVec3 pos, PxVec3 size, PxQuat rot) {
-    Wall w;
-    w.init(pos, size, rot, physics);
-    walls.push_back(w);
 }

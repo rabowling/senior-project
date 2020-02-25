@@ -4,17 +4,13 @@
 using namespace physx;
 using namespace glm;
 
-Wall::Wall() {
-}
-
-void Wall::init(PxVec3 position, PxVec3 size, PxQuat orientation, Physics physics) {
+void Wall::init(PxVec3 position, PxVec3 size, PxQuat orientation) {
     this->size = size;
 
-    PxMaterial *material = physics.getPhysics()->createMaterial(0.3f, 0.3f, 0.3f);
-    pShape = physics.getPhysics()->createShape(PxBoxGeometry(size), *material);
-    gWall = physics.getPhysics()->createRigidStatic(PxTransform(position, orientation));
+    pShape = app.physics.getPhysics()->createShape(PxBoxGeometry(size), *app.physics.defaultMaterial);
+    gWall = app.physics.getPhysics()->createRigidStatic(PxTransform(position, orientation));
     gWall->attachShape(*pShape);
-    physics.getScene()->addActor(*gWall);
+    app.physics.getScene()->addActor(*gWall);
     pShape->release();
 }
 

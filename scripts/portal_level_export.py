@@ -46,7 +46,8 @@ def serialize_object(collection, obj):
         return ('wall {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
             .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     elif collection == 'Buttons':
-        pass
+        return ('button {t.x} {t.y} {t.z}'
+            .format(t = m.to_translation()))
     elif collection == 'Boxes':
         return ('box {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
             .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
