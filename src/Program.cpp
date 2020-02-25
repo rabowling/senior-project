@@ -160,7 +160,14 @@ void Program::findUniformsAndAttributes() {
 		GLsizei actualLength = 0;
 		glGetActiveAttrib(pid, attrib, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
 		std::string name((char*)&nameData[0], actualLength);
-		addAttribute(name);
+		if (arraySize == 1) {
+			addAttribute(name);
+		}
+		else {
+			for (int i = 0; i < arraySize; i++) {
+				addAttribute(name + "[" + std::to_string(i) + "]");
+			}
+		}
 	}
 
 	// get uniforms
@@ -171,6 +178,13 @@ void Program::findUniformsAndAttributes() {
 		GLsizei actualLength = 0;
 		glGetActiveUniform(pid, unif, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
 		std::string name((char*)&nameData[0], actualLength);
-		addUniform(name);
+		if (arraySize == 1) {
+			addUniform(name);
+		}
+		else {
+			for (int i = 0; i < arraySize; i++) {
+				addUniform(name + "[" + std::to_string(i) + "]");
+			}
+		}
 	}
 }
