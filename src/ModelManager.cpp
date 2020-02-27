@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void ModelManager::loadModels(std::string dir) {
+void ModelManager::loadModels(std::string dir, bool useGl) {
     vector<string> files = listDir(dir);
 
     for (string file : files) {
@@ -17,7 +17,9 @@ void ModelManager::loadModels(std::string dir) {
             string modelName = file.substr(0, lastIndex);
             Shape shape;
             shape.loadMesh(dir + "/" + file);
-            shape.init();
+            if (useGl) {
+                shape.init();
+            }
             models[modelName] = shape;
             cout << "Loaded model: " << modelName << endl;
         }

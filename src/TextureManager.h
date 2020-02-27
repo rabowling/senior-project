@@ -8,7 +8,7 @@
 class TextureManager
 {
 public:
-    void loadTextures(std::string dir);
+    void loadTextures(std::string dir, bool useGl = true);
     void bind(std::string textureName, std::string uniform);
     void unbind();
     Texture *getActive();

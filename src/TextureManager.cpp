@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void TextureManager::loadTextures(std::string dir) {
+void TextureManager::loadTextures(std::string dir, bool useGl) {
     vector<string> files = listDir(dir);
 
     for (string file : files) {
@@ -16,10 +16,12 @@ void TextureManager::loadTextures(std::string dir) {
         if (lastIndex != -1) {
             string textureName = file.substr(0, lastIndex);
             Texture texture;
-            texture.setFilename(dir + "/" + file);
-            texture.init();
-            texture.setUnit(1);
-            texture.setWrapModes(GL_REPEAT, GL_REPEAT);
+            texture.loadTexture(dir + "/" + file);
+            if (useGl) {
+                texture.init();
+                texture.setUnit(1);
+                texture.setWrapModes(GL_REPEAT, GL_REPEAT);
+            }
             textures[textureName] = texture;
             cout << "Loaded texture: " << textureName << endl;
         }

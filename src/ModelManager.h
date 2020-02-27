@@ -8,7 +8,7 @@
 class ModelManager
 {
 public:
-    void loadModels(std::string dir);
+    void loadModels(std::string dir, bool useGl = true);
     void draw(std::string modelName);
 
 private:

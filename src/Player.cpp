@@ -45,10 +45,8 @@ void Player::init() {
     desc.reportCallback = this;
 
     mController = app.physics.getControllerManager()->createController(desc);
-    mWindowManager = &app.windowManager;
     velocity = PxVec3(0);
     camera.init(px2glm(desc.position), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
-    mScene = app.physics.getScene();
 
     // Create and link player-controlled portals
     app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
@@ -119,7 +117,7 @@ void Player::update(float dt) {
             PxRaycastBuffer hit;
             PxReal maxDist = 50.0;
             raycastMode = PICK_UP;
-            bool success = mScene->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
+            bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
                 PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), this);
             if (success) {
                 if (hit.block.actor->is<PxRigidBody>()) {
@@ -153,7 +151,7 @@ void Player::update(float dt) {
         PxRaycastBuffer hit;
         PxReal maxDist = 100.0;
         raycastMode = FIRE_PORTAL;
-        bool success = mScene->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
+        bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
             PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER)), this);
         if (success) {
             Portal *portal = app.controls.isPressed(Controls::PRIMARY_FIRE) ? &app.portals[0] : &app.portals[1];

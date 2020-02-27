@@ -22,8 +22,6 @@ class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCall
         Portal *portals[2] = { nullptr, nullptr };
     private:
         physx::PxController *mController;
-        physx::PxScene *mScene;
-        WindowManager *mWindowManager;
         physx::PxVec3 origin;
         physx::PxVec3 unitDir;
         physx::PxVec3 lastLocation;

@@ -9,7 +9,6 @@
 using namespace std;
 
 Texture::Texture() :
-	filename(""),
 	tid(0)
 {
 	
@@ -20,12 +19,11 @@ Texture::~Texture()
 	
 }
 
-void Texture::init()
-{
+void Texture::loadTexture(const std::string &filename) {
 	// Load texture
-	int w, h, ncomps;
+	int w, h;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load(filename.c_str(), &w, &h, &ncomps, 0);
+	data = stbi_load(filename.c_str(), &w, &h, &ncomps, 0);
 	if(!data) {
 		cerr << filename << " not found" << endl;
 	}
@@ -37,7 +35,10 @@ void Texture::init()
 	}
 	width = w;
 	height = h;
+}
 
+void Texture::init()
+{
 	// Generate a texture buffer object
 	glGenTextures(1, &tid);
 	// Bind the current texture to be the newly generated texture object
