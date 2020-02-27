@@ -39,10 +39,10 @@ public:
     float physicsStep;
     float deltaTime;
 
-    std::vector<Portal> portals;
-    std::vector<Box> boxes;
-    std::vector<Button> buttons;
-    std::vector<Wall> walls;
+    std::list<Portal> portals;
+    std::list<Box> boxes;
+    std::list<Button> buttons;
+    std::list<Wall> walls;
 
     unsigned int depthCubemap;
     unsigned int depthMapFBO;

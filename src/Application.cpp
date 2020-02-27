@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <glm/gtc/matrix_transform.hpp>
+#include <map>
 #include "Shape.h"
 #include "GLSL.h"
 
@@ -19,12 +20,6 @@ using namespace glm;
 Application app;
 
 void Application::run(const vector<string> &args) {
-    // init
-    portals.reserve(MAX_PORTALS);
-    buttons.reserve(32);
-    boxes.reserve(32);
-    walls.reserve(256);
-
     windowManager.init(1280, 720);
     physics.init();
     player.init();
@@ -126,28 +121,31 @@ void Application::render(float dt) {
     glStencilMask(0xFF);
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(-1.0, -1.0);
-    for (int i = 0; i < portals.size(); i++) {
-        glStencilFunc(GL_ALWAYS, i + 1, 0xFF);
-        portals[i].draw(M);
+    int i = 1;
+    for (Portal &portal : portals) {
+        glStencilFunc(GL_ALWAYS, i++, 0xFF);
+        portal.draw(M);
     }
 
     // Render portal outline
     glStencilMask(0x00);
     //glDisable(GL_DEPTH_TEST);
 
-    for (int i = 0; i < portals.size(); i++) {
-        glStencilFunc(GL_NOTEQUAL, i + 1, 0xFF);
-        portals[i].drawOutline(M);
+    i = 1;
+    for (Portal &portal : portals) {
+        glStencilFunc(GL_NOTEQUAL, i++, 0xFF);
+        portal.drawOutline(M);
     }
 
     glDisable(GL_POLYGON_OFFSET_FILL);
 
     //glEnable(GL_DEPTH_TEST);
     // Render scene through portals
-    for (int i = 0; i < portals.size(); i++) {
-        glStencilFunc(GL_EQUAL, i + 1, 0xFF);
+    i = 1;
+    for (Portal &portal : portals) {
+        glStencilFunc(GL_EQUAL, i++, 0xFF);
         glClear(GL_DEPTH_BUFFER_BIT);
-        Portal *linkedPortal = portals[i].linkedPortal;
+        Portal *linkedPortal = portal.linkedPortal;
         linkedPortal->updateCamera(player.camera);
         mat4 portalV = linkedPortal->camera.getLookAt();
         mat4 portalP = linkedPortal->modifyProjectionMatrix(P, portalV);
@@ -263,8 +261,8 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
     }
-    for (int i = 0; i < walls.size(); i++) {
-        walls[i].draw(M, isCubemap);
+    for (Wall &wall : walls) {
+        wall.draw(M, isCubemap);
     }
 }
 
@@ -294,8 +292,7 @@ void Application::loadLevel(string levelFile) {
     ifstream in;
     in.open("../resources/levels/level1.txt");
     string line;
-    vector<int> portalIds;
-    int initialPortals = portals.size();
+    map<int, Portal *> portalIdMap;
     while (getline(in, line)) {
         istringstream iss(line);
         string type;
@@ -334,20 +331,17 @@ void Application::loadLevel(string levelFile) {
             vec3 pos = glm::vec3(floatData[0], floatData[1], floatData[2]);
             vec3 scale = glm::vec3(floatData[3], floatData[4], floatData[5]);
             quat rot = glm::quat(floatData[6], floatData[7], floatData[8], floatData[9]);
+            int portalId = intData[0];
+            int linkedPortalId = intData[1];
             portals.push_back(Portal(pos, scale, rot, "world_portal"));
-            Portal *portal = &portals[portals.size() - 1];
+            Portal *portal = &portals.back();
+            portalIdMap[portalId] = portal;
             portal->setPosition(pos, rot);
 
             // link portals
-            int linkedPortalId = intData[1];
-            for (int i = 0; i < portalIds.size(); i++) {
-                if (portalIds[i] == linkedPortalId) {
-                    portal->linkPortal(&portals[i+initialPortals]);
-                    break;
-                }
+            if (portalIdMap.find(linkedPortalId) != portalIdMap.end()) {
+                portal->linkPortal(portalIdMap[linkedPortalId]);
             }
-
-            portalIds.push_back(intData[0]);
         }
         else if (type == "box") {
             float data[10];

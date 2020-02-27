@@ -25,7 +25,7 @@ public:
     std::string model;
     std::string outlineModel;
     Camera camera;
-    Portal *linkedPortal;
+    Portal *linkedPortal = nullptr;
     glm::vec3 localForward = glm::vec3(0, 1, 0);
     glm::vec3 localUp = glm::vec3(0, 0, -1);
 private:

@@ -51,8 +51,9 @@ void Player::init() {
     // Create and link player-controlled portals
     app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
     app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
-    portals[0] = &app.portals[app.portals.size() - 2];
-    portals[1] = &app.portals[app.portals.size() - 1];
+    auto it = app.portals.rbegin();
+    portals[1] = &(*it);
+    portals[0] = &(*next(it));
     portals[0]->linkPortal(portals[1]);
 }
 
@@ -154,7 +155,7 @@ void Player::update(float dt) {
         bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
             PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER)), this);
         if (success) {
-            Portal *portal = app.controls.isPressed(Controls::PRIMARY_FIRE) ? &app.portals[0] : &app.portals[1];
+            Portal *portal = app.controls.isPressed(Controls::PRIMARY_FIRE) ? portals[0] : portals[1];
             vec3 newPos = px2glm(hit.block.position);
             vec3 cameraRight = cross(px2glm(unitDir), camera.upVec);
             vec3 portalUp = cross(px2glm(hit.block.normal), cameraRight);
