@@ -121,7 +121,7 @@ glm::vec3 traceScene(const glm::vec3 &orig, const glm::vec3 &dir) {
 }
 
 void renderRT(int width, int height, const std::string &filename) {
-    vec3 pixels[width * height];
+    vec3 *pixels = new vec3[width * height];
     float fov = 45;
     float invHeight = 1.0f / height;
     float invWidth = 1.0f / width;
@@ -136,10 +136,10 @@ void renderRT(int width, int height, const std::string &filename) {
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
             *pixel = traceScene(orig, dir);
-            cout << "Tracing: " << y * 100 / height << "%" << endl;
+            //cout << "Tracing: " << y * 100 / height << "%" << endl;
         }
     }
-    cout << "Tracing: done" << endl;
+    //cout << "Tracing: done" << endl;
 
     std::ofstream ofs(filename, std::ios::out | std::ios::binary); 
     ofs << "P6\n" << width << " " << height << "\n255\n"; 
@@ -149,4 +149,6 @@ void renderRT(int width, int height, const std::string &filename) {
                (unsigned char)(std::min(float(1), pixels[i].b) * 255); 
     }
     ofs.close(); 
+
+    delete[] pixels;
 }
