@@ -35,3 +35,7 @@ glm::vec3 px2glm(physx::PxVec3 v) {
 glm::vec3 px2glm(physx::PxExtendedVec3 v) {
     return glm::vec3(v.x, v.y, v.z);
 }
+
+glm::quat px2glm(physx::PxQuat q) {
+    return glm::quat(q.w, q.x, q.y, q.z);
+}

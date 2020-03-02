@@ -4,10 +4,11 @@
 #include <glm/gtc/quaternion.hpp>
 #include <string>
 #include "Camera.h"
+#include "GameObject.h"
 
 class Portal;
 
-class Portal
+class Portal : public GameObject
 {
 public:
     Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model);
@@ -19,6 +20,9 @@ public:
     void updateCamera(const Camera &playerCamera);
     void drawOutline(MatrixStack &M);
     glm::mat4 modifyProjectionMatrix(const glm::mat4 &P, const glm::mat4 &V);
+
+    virtual Shape *getModel() const;
+    virtual glm::mat4 getTransform() const;
 
     glm::vec3 getUp();
     glm::vec3 getForward();

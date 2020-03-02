@@ -2,6 +2,9 @@
 
 #include "Application.h"
 #include <string>
+#include "Utils.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace physx;
 
@@ -26,4 +29,13 @@ void Button::draw(MatrixStack &M) {
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
     app.modelManager.draw("cylinder");
     M.popMatrix();
+}
+
+Shape *Button::getModel() const {
+    return app.modelManager.get("cylinder");
+}
+
+glm::mat4 Button::getTransform() const {
+    PxTransform t = body->getGlobalPose();
+    return glm::translate(glm::mat4(1), px2glm(t.p));
 }

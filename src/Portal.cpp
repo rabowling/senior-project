@@ -1,5 +1,6 @@
 #include "Portal.h"
 #include "Application.h"
+#include "Utils.h"
 
 #include <glm/gtc/quaternion.hpp>
 
@@ -95,4 +96,12 @@ mat4 Portal::modifyProjectionMatrix(const mat4 &P, const mat4 &V) {
     mat[3][2] = c.w - mat[3][3];
 
     return mat;
+}
+
+Shape *Portal::getModel() const {
+    return app.modelManager.get(model);
+}
+
+glm::mat4 Portal::getTransform() const {
+    return glm::scale(translate(mat4(1), position) * mat4_cast(orientation), scale);
 }

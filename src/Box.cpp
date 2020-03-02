@@ -1,6 +1,7 @@
 #include "Box.h"
 #include "Application.h"
 #include "Utils.h"
+#include <glm/glm.hpp>
 
 using namespace physx;
 
@@ -25,4 +26,13 @@ void Box::draw(MatrixStack &M) {
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
     app.modelManager.draw("cube");
     M.popMatrix();
+}
+
+Shape *Box::getModel() const {
+    return app.modelManager.get("cube");
+}
+
+glm::mat4 Box::getTransform() const {
+    PxTransform t = body->getGlobalPose();
+    return glm::scale(glm::translate(glm::mat4(1), px2glm(t.p)) * glm::mat4_cast(px2glm(t.q)), scale);
 }

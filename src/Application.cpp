@@ -10,6 +10,7 @@
 #include <map>
 #include "Shape.h"
 #include "GLSL.h"
+#include "Raytrace.h"
 
 using namespace physx;
 using namespace std;
@@ -367,4 +368,20 @@ void Application::loadLevel(string levelFile) {
         }
     }
     in.close();
+
+    for (Wall &wall : walls) {
+        gameObjects.push_back(&wall);
+    }
+
+    for (Box &box : boxes) {
+        gameObjects.push_back(&box);
+    }
+
+    for (Button &button : buttons) {
+        gameObjects.push_back(&button);
+    }
+
+    for (Portal &portal : portals) {
+        gameObjects.push_back(&portal);
+    }
 }

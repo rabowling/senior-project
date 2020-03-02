@@ -43,6 +43,7 @@ public:
     std::list<Box> boxes;
     std::list<Button> buttons;
     std::list<Wall> walls;
+    std::list<GameObject *> gameObjects;
 
     unsigned int depthCubemap;
     unsigned int depthMapFBO;

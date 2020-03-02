@@ -2,8 +2,9 @@
 
 #include <PxPhysicsAPI.h>
 #include "MatrixStack.h"
+#include "GameObject.h"
 
-class Button
+class Button : public GameObject
 {
 public:
     void onContact(physx::PxActor *other);
@@ -11,4 +12,6 @@ public:
     void draw(MatrixStack &M);
     physx::PxRigidStatic *body;
     bool pressed = false;
+    virtual Shape *getModel() const;
+    virtual glm::mat4 getTransform() const;
 };

@@ -1,6 +1,7 @@
 #include "Controls.h"
 
 #include "Application.h"
+#include "Raytrace.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -113,6 +114,9 @@ void Controls::update() {
             saveRecording(recordingFile);
         }
         glfwSetWindowShouldClose(handle, true);
+    }
+    if (glfwGetKey(handle, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+        renderRT(400, 200, "screenshot" + to_string(app.stepCount) + ".ppm");
     }
 }
 
