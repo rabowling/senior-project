@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
+#include <limits>
 
 using namespace std;
 
@@ -124,7 +126,7 @@ void Controls::saveRecording(string filename) {
     ofstream out;
     out.open(filename);
     for (InputFrame frame : inputFrames) {
-        out << frame.frame << ";" << hexfloat << frame.mouseDeltaX << ";" << frame.mouseDeltaY << ";";
+        out << frame.frame << ";" << setprecision(numeric_limits<float>::max_digits10) << frame.mouseDeltaX << ";" << frame.mouseDeltaY << ";";
         for (auto it = frame.pressed.begin(); it != frame.pressed.end(); it++) {
             out << *it;
             if (next(it) != frame.pressed.end()) {
