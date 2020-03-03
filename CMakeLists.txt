@@ -72,5 +72,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME} glfw ${GLFW_LIBRARIES})
 # Set up OpenMP
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(MyTarget PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(${CMAKE_PROJECT_NAME} OpenMP::OpenMP_CXX)
 endif()
