@@ -57,17 +57,17 @@ bool compare(const RayHit &r1, const RayHit &r2) {
     return r1.d < r2.d;
 }
 
-bool intersectRayShape(const glm::vec3 &orig, const glm::vec3 &dir, const Shape &shape, const glm::mat4 &transform, RayHit &closestHit)
+bool intersectRayShape(const glm::vec3 &orig, const glm::vec3 &dir, const std::vector<float> &posBuf, const std::vector<unsigned int> eleBuf,
+    RayHit &closestHit)
 {
     bool success = false;
-    for (int fIdx = 0; fIdx < shape.eleBuf.size() / 3; fIdx++) {
+    for (int fIdx = 0; fIdx < eleBuf.size() / 3; fIdx++) {
         vec3 v[3];
         for (int vNum = 0; vNum < 3; vNum++) {
-            unsigned int vIdx = shape.eleBuf[fIdx*3+vNum];
+            unsigned int vIdx = eleBuf[fIdx*3+vNum];
             for (int i = 0; i < 3; i++) {
-                v[vNum][i] = shape.posBuf[vIdx*3+i];
+                v[vNum][i] = posBuf[vIdx*3+i];
             }
-            v[vNum] = vec3(transform * vec4(v[vNum], 1));
         }
 
         RayHit hit;
@@ -83,7 +83,7 @@ bool intersectRayShape(const glm::vec3 &orig, const glm::vec3 &dir, const Shape 
 }
 
 bool traceGameObject(const glm::vec3 &orig, const glm::vec3 &dir, const GameObject &obj, RayHit &hit) {
-    return intersectRayShape(orig, dir, *obj.getModel(), obj.getTransform(), hit);
+    return intersectRayShape(orig, dir, obj.posBufCache, obj.getModel()->eleBuf, hit);
 }
 
 glm::vec3 traceScene(const glm::vec3 &orig, const glm::vec3 &dir) {
@@ -128,6 +128,10 @@ void renderRT(int width, int height, const std::string &filename) {
     float aspect = width * invHeight;
     float angle = tan(M_PI * 0.5 * fov / 180);
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
+
+    for (GameObject *obj : app.gameObjects) {
+        obj->cacheGeometry();
+    }
 
     #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
