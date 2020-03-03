@@ -155,7 +155,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
     // blerp
     ivec2 center = round(uv);
     vec2 delta = (vec2) center - uv + 0.5f;
-    vec3 color(0);
+    vec3 texColor(0);
     for (int x = 0; x < 2; x++) {
         for (int y = 0; y < 2; y++) {
             int idxX = center.x + x - 1;
@@ -179,11 +179,21 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
             for (int i = 0; i < 3; i++) {
                 sample[i] = texture->data[idx*3+i];
             }
-            color += sample * (x == 0 ? delta.x : 1 - delta.x) * (y == 0 ? delta.y : 1 - delta.y);
+            texColor += sample * (x == 0 ? delta.x : 1 - delta.x) * (y == 0 ? delta.y : 1 - delta.y);
         }
     }
 
-    return color;
+    // Blinn-Phong shading
+    vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
+    vec3 lightPos(30, 8, 30);
+    vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
+    vec3 lightDir = normalize(lightPos - hitPos);
+    vec3 diffuse = texColor * std::max(0.f, dot(normal, lightDir));
+    vec3 viewDir = normalize(app.player.camera.eye - hitPos);
+    vec3 H = normalize((lightDir + viewDir) / 2.f);
+    vec3 specular = vec3(1) * glm::pow(std::max(0.f, dot(H, normal)), 12.8f);
+
+    return diffuse + specular;
 }
 
 void renderRT(int width, int height, const std::string &filename) {
