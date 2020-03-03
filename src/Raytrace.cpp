@@ -193,7 +193,16 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
     vec3 H = normalize((lightDir + viewDir) / 2.f);
     vec3 specular = vec3(1) * glm::pow(std::max(0.f, dot(H, normal)), 12.8f);
 
-    return diffuse + specular;
+    // Shadow rays
+    RayHit shadowRayHit;
+    float shadow = 1;
+    if (traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)) {
+        if (shadowRayHit.d < distance(lightPos, hitPos)) {
+            shadow = 0;
+        }
+    }
+
+    return (diffuse + specular) * shadow;
 }
 
 void renderRT(int width, int height, const std::string &filename) {
