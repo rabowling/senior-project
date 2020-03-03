@@ -82,17 +82,12 @@ bool intersectRayShape(const glm::vec3 &orig, const glm::vec3 &dir, const std::v
     return success;
 }
 
-bool traceGameObject(const glm::vec3 &orig, const glm::vec3 &dir, const GameObject &obj, RayHit &hit) {
-    return intersectRayShape(orig, dir, obj.posBufCache, obj.getModel()->eleBuf, hit);
-}
-
-glm::vec3 traceScene(const glm::vec3 &orig, const glm::vec3 &dir) {
-    RayHit closestHit;
+bool traceScene(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &closestHit) {
     bool success = false;
     
     for (GameObject *obj : app.gameObjects) {
         RayHit hit;
-        if (traceGameObject(orig, dir, *obj, hit)) {
+        if (intersectRayShape(orig, dir, obj->posBufCache, obj->getModel()->eleBuf, hit)) {
             hit.obj = obj;
             if (!success || compare(hit, closestHit)) {
                 success = true;
@@ -100,23 +95,94 @@ glm::vec3 traceScene(const glm::vec3 &orig, const glm::vec3 &dir) {
             }
         }
     }
-    
-    vec3 color(0);
-    if (success) {
-        color = vec3(closestHit.d / 50);
-        if (dynamic_cast<Button *>(closestHit.obj)) {
-            color.g = color.b = 0;
+
+    return success;
+}
+
+glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
+    RayHit hit;
+    if (!traceScene(orig, dir, hit)) {
+        return vec3(0, 0, 0);
+    }
+
+    vec3 vert[3];
+    vec2 vt[3];
+    vec3 vn[3];
+    Shape *model = hit.obj->getModel();
+    for (int vNum = 0; vNum < 3; vNum++) {
+        unsigned int vIdx = model->eleBuf[hit.faceIndex*3+vNum];
+        for (int i = 0; i < 3; i++) {
+            vert[vNum][i] = hit.obj->posBufCache[vIdx*3+i];
+            vn[vNum][i] = model->norBuf[vIdx*3+i];
         }
-        else if (dynamic_cast<Wall *>(closestHit.obj)) {
-            color.r = color.b = 0;
-        }
-        else if (dynamic_cast<Box *>(closestHit.obj)) {
-            color.r = color.g = 0;
-        }
-        else if (dynamic_cast<Portal *>(closestHit.obj)) {
-            color.r = 0;
+
+        for (int i = 0; i < 2; i++) {
+            vt[vNum][i] = model->texBuf[vIdx*2+i];
         }
     }
+
+    vec2 uv = hit.u * vt[1] + hit.v * vt[2] + (1 - hit.u - hit.v) * vt[0];
+
+    Texture *texture;
+    if (dynamic_cast<Wall *>(hit.obj)) {
+        texture = app.textureManager.get("concrete");
+        Wall *wall = static_cast<Wall *>(hit.obj);
+        if (dot(vn[0], vec3(1, 0, 0)) != 0) {
+            uv.x *= wall->size.y;
+            uv.y *= wall->size.z;
+        } else if (dot(vn[0], vec3(0, 1, 0)) != 0) {
+            uv.x *= wall->size.x;
+            uv.y *= wall->size.z;
+        } else if (dot(vn[0], vec3(0, 0, 1)) != 0) {
+            uv.x *= wall->size.y;
+            uv.y *= wall->size.x;
+        }
+    }
+    else {
+        texture = app.textureManager.get("marble");
+    }
+
+    if (uv.x > 1.0f) {
+        uv.x = fmod(uv.x, 1.0f);
+    }
+    if (uv.y > 1.0f) {
+        uv.y = fmod(uv.y, 1.0f);
+    }
+
+    uv.x *= texture->width;
+    uv.y *= texture->height;
+
+    // blerp
+    ivec2 center = round(uv);
+    vec2 delta = (vec2) center - uv + 0.5f;
+    vec3 color(0);
+    for (int x = 0; x < 2; x++) {
+        for (int y = 0; y < 2; y++) {
+            int idxX = center.x + x - 1;
+            int idxY = center.y + y - 1;
+
+            if (idxX == texture->width) {
+                idxX = 0;
+            }
+            else if (idxX == -1) {
+                idxX = texture->width - 1;
+            }
+            if (idxY == texture->height) {
+                idxY = 0;
+            }
+            else if (idxY == -1) {
+                idxY = texture->height - 1;
+            }
+
+            int idx = idxY * texture->width + idxX;
+            vec3 sample;
+            for (int i = 0; i < 3; i++) {
+                sample[i] = texture->data[idx*3+i];
+            }
+            color += sample * (x == 0 ? delta.x : 1 - delta.x) * (y == 0 ? delta.y : 1 - delta.y);
+        }
+    }
+
     return color;
 }
 
@@ -140,16 +206,16 @@ void renderRT(int width, int height, const std::string &filename) {
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
-            pixels[y*width+x] = traceScene(orig, dir);
+            pixels[y*width+x] = traceColor(orig, dir);
         }
     }
 
     std::ofstream ofs(filename, std::ios::out | std::ios::binary); 
     ofs << "P6\n" << width << " " << height << "\n255\n"; 
     for (unsigned i = 0; i < width * height; ++i) { 
-        ofs << (unsigned char)(std::min(float(1), pixels[i].r) * 255) << 
-               (unsigned char)(std::min(float(1), pixels[i].g) * 255) << 
-               (unsigned char)(std::min(float(1), pixels[i].b) * 255); 
+        ofs << (unsigned char)(std::min(255, (int) round(pixels[i].r))) << 
+               (unsigned char)(std::min(255, (int) round(pixels[i].g))) << 
+               (unsigned char)(std::min(255, (int) round(pixels[i].b))); 
     }
     ofs.close(); 
 

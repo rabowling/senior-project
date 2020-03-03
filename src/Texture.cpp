@@ -60,7 +60,7 @@ void Texture::init()
 	// Unbind
 	glBindTexture(GL_TEXTURE_2D, 0);
 	// Free image, since the data is now on the GPU
-	stbi_image_free(data);
+	// stbi_image_free(data);
 }
 
 void Texture::setWrapModes(GLint wrapS, GLint wrapT)

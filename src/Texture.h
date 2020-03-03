@@ -18,12 +18,12 @@ public:
 	void unbind();
 	void setWrapModes(GLint wrapS, GLint wrapT); // Must be called after init()
 	GLint getID() const { return tid;}
-private:
 	int width;
 	int height;
+	unsigned char *data;
+private:
 	GLuint tid;
 	GLint unit;
-	unsigned char *data;
 	int ncomps;
 	
 };

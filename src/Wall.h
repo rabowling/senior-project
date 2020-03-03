@@ -13,8 +13,8 @@ class Wall : public GameObject {
         virtual Shape *getModel() const;
         virtual glm::mat4 getTransform() const;
     
-    private:
         physx::PxVec3 size;
+    private:
         physx::PxShape *pShape;
         physx::PxRigidStatic *gWall;
 };

@@ -11,6 +11,7 @@ public:
     void loadTextures(std::string dir, bool useGl = true);
     void bind(std::string textureName, std::string uniform);
     void unbind();
+    Texture *get(std::string textureName) { return &textures[textureName]; }
     Texture *getActive();
 
 private:
