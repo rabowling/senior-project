@@ -127,19 +127,18 @@ void renderRT(int width, int height, const std::string &filename) {
     float invWidth = 1.0f / width;
     float aspect = width * invHeight;
     float angle = tan(M_PI * 0.5 * fov / 180);
-    vec3 *pixel = pixels;
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
+
+    #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++, pixel++) {
+        for (int x = 0; x < width; x++) {
             float xx = (2 * ((x + 0.5) * invWidth) - 1) * angle * aspect;
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
-            *pixel = traceScene(orig, dir);
-            //cout << "Tracing: " << y * 100 / height << "%" << endl;
+            pixels[y*width+x] = traceScene(orig, dir);
         }
     }
-    //cout << "Tracing: done" << endl;
 
     std::ofstream ofs(filename, std::ios::out | std::ios::binary); 
     ofs << "P6\n" << width << " " << height << "\n255\n"; 

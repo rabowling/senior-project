@@ -68,3 +68,9 @@ add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS})
 # Link libraries
 target_link_libraries(${CMAKE_PROJECT_NAME} PhysXCharacterKinematic_static_64 PhysX_static_64 PhysXCommon_static_64 PhysXFoundation_static_64 PhysXExtensions_static_64 PhysXCooking_static_64 PhysXPvdSDK_static_64 PhysXVehicle_static_64)
 target_link_libraries(${CMAKE_PROJECT_NAME} glfw ${GLFW_LIBRARIES})
+
+# Set up OpenMP
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(MyTarget PUBLIC OpenMP::OpenMP_CXX)
+endif()
