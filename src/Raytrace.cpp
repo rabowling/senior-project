@@ -54,6 +54,22 @@ bool compare(const RayHit &r1, const RayHit &r2) {
         else if (dynamic_cast<Portal *>(r2.obj)) {
             return false;
         }
+        else if (dynamic_cast<PortalOutline *>(r1.obj)) {
+            if (dynamic_cast<Portal *>(r2.obj)) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        else if (dynamic_cast<PortalOutline *>(r2.obj)) {
+            if (dynamic_cast<Portal *>(r1.obj)) {
+                return false;
+            }
+            else {
+                return true;
+            } 
+        }
     }
     return r1.d < r2.d;
 }
@@ -219,6 +235,9 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
         vec3 newDir = normalize(newOrig - newEye);
         return traceColor(newOrig, newDir);
+    }
+    else if (dynamic_cast<PortalOutline *>(hit.obj)) {
+        return static_cast<PortalOutline *>(hit.obj)->color * 255.f;
     }
     else {
         return vec3(255);

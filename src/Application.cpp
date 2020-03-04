@@ -365,5 +365,8 @@ void Application::loadLevel(string levelFile) {
 
     for (Portal &portal : portals) {
         gameObjects.push_back(&portal);
+        if (portal.hasOutline) {
+            gameObjects.push_back(portal.outline);
+        }
     }
 }
