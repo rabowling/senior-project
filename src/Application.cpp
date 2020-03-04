@@ -119,7 +119,6 @@ void Application::render(float dt) {
     shaderManager.bind("portal");
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V));
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P));
-    glUniform3f(shaderManager.getUniform("outlinecolor"), 0, 1, 1);
     glStencilMask(0xFF);
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(-1.0, -1.0);
@@ -136,7 +135,9 @@ void Application::render(float dt) {
     i = 1;
     for (Portal &portal : portals) {
         glStencilFunc(GL_NOTEQUAL, i++, 0xFF);
-        portal.drawOutline(M);
+        if (portal.hasOutline) {
+            portal.outline->draw(M);
+        }
     }
 
     glDisable(GL_POLYGON_OFFSET_FILL);

@@ -15,6 +15,7 @@
 #include "Portal.h"
 #include "Box.h"
 #include "Button.h"
+#include "PortalOutline.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>

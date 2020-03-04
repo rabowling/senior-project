@@ -49,12 +49,15 @@ void Player::init() {
     camera.init(px2glm(desc.position), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
 
     // Create and link player-controlled portals
-    app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
-    app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal", "portal_outline"));
+    app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal"));
+    app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal"));
     auto it = app.portals.rbegin();
     portals[1] = &(*it);
     portals[0] = &(*next(it));
     portals[0]->linkPortal(portals[1]);
+
+    portals[0]->setOutline(new PortalOutline(vec3(0, 0, 1), "portal_outline"));
+    portals[1]->setOutline(new PortalOutline(vec3(1, 0.5, 0), "portal_outline"));
 }
 
 void Player::update(float dt) {

@@ -5,14 +5,15 @@
 #include <string>
 #include "Camera.h"
 #include "GameObject.h"
+#include "PortalOutline.h"
 
 class Portal;
+class PortalOutline;
 
 class Portal : public GameObject
 {
 public:
     Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model);
-    Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model, std::string outlineModel);
     bool open = true;
     void draw(MatrixStack &M);
     void linkPortal(Portal *other);
@@ -28,15 +29,16 @@ public:
     glm::vec3 getUp();
     glm::vec3 getForward();
     std::string model;
-    std::string outlineModel;
+    void setOutline(PortalOutline *outline);
+    PortalOutline *outline;
+    bool hasOutline = false;
+
     Camera camera;
     Portal *linkedPortal = nullptr;
     glm::vec3 localForward = glm::vec3(0, 1, 0);
     glm::vec3 localUp = glm::vec3(0, 0, -1);
+    
     glm::vec3 position;
     glm::quat orientation;
-private:
-    bool hasOutline;
     glm::vec3 scale = glm::vec3(1);
-    glm::vec3 color = glm::vec3(1, 1, 1);
 };

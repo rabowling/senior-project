@@ -1,21 +1,22 @@
 #include "Portal.h"
 #include "Application.h"
 #include "Utils.h"
+#include "PortalOutline.h"
 
 #include <glm/gtc/quaternion.hpp>
 
 using namespace glm;
 
 Portal::Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model) :
-    scale(scale), model(model), hasOutline(false)
+    scale(scale), model(model)
 {
     setPosition(position, orientation);
 }
 
-Portal::Portal(glm::vec3 position, glm::vec3 scale, glm::quat orientation, std::string model, std::string outlineModel) :
-    scale(scale), model(model), outlineModel(outlineModel), hasOutline(true)
-{
-    setPosition(position, orientation);
+void Portal::setOutline(PortalOutline *outline) {
+    this->outline = outline;
+    hasOutline = true;
+    outline->parent = this;
 }
 
 void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
@@ -30,22 +31,9 @@ void Portal::draw(MatrixStack &M) {
     M.translate(position);
     M.rotate(orientation);
     M.scale(scale);
+    glUniform3fv(app.shaderManager.getUniform("outlinecolor"), 1, value_ptr(hasOutline ? outline->color : vec3(1)));
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
     app.modelManager.draw(model);
-    M.popMatrix();
-}
-
-void Portal::drawOutline(MatrixStack &M) {
-    if (!hasOutline) {
-        return;
-    }
-    
-    M.pushMatrix();
-    M.translate(position);
-    M.rotate(orientation);
-    M.scale(scale);
-    glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-    app.modelManager.draw(outlineModel);
     M.popMatrix();
 }
 
