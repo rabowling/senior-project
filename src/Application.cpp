@@ -46,6 +46,7 @@ void Application::run(const vector<string> &args) {
     shaderManager.loadShaders("../resources/shaders");
     textureManager.loadTextures("../resources/textures");
     modelManager.loadModels("../resources/models");
+    materialManager.loadMaterials();
 
     lightPos = vec3(30, 8, 30);
 
@@ -200,15 +201,10 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
 
     if (!isCubemap) {
         shaderManager.bind("tex");
-        textureManager.bind("marble", "Texture0");
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.01, 0.018725, 0.01745);
-        glUniform3f(shaderManager.getUniform("MatDif"), 0.396, 0.74151, 0.69102);
-        glUniform3f(shaderManager.getUniform("MatSpec"), 0.297254, 0.30829, 0.306678);
-        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
@@ -224,9 +220,6 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.01, 0.018725, 0.01745);
-        glUniform3f(shaderManager.getUniform("MatSpec"), 0.8, 0.8, 0);
-        glUniform1f(shaderManager.getUniform("Shine"), 12.8);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
@@ -234,28 +227,16 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
     }
     for (Button &button : buttons) {
-        if (!isCubemap) {
-            if (button.pressed) {
-                glUniform3f(shaderManager.getUniform("MatDif"), 1, 0, 0);
-            } else {
-                glUniform3f(shaderManager.getUniform("MatDif"), 1, 0.8, 0);
-            }
-        }
         button.draw(M);
     }
 
     if (!isCubemap) {
         // Set up wall shader colors here
         shaderManager.bind("wall");
-        textureManager.bind("concrete", "Texture0");
         //glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 	    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform1f(shaderManager.getUniform("farPlane"), far);
-        glUniform3f(shaderManager.getUniform("MatAmb"), 0.019225, 0.019225, 0.019225);
-        glUniform3f(shaderManager.getUniform("MatDif"), 0.50754, 0.50754, 0.50754);
-        glUniform3f(shaderManager.getUniform("MatSpec"), 0.508273, 0.508273, 0.508273);
-        glUniform1f(shaderManager.getUniform("Shine"), 51.2);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));

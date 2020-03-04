@@ -4,6 +4,7 @@
 #include <PxPhysicsAPI.h>
 #include "MatrixStack.h"
 #include "GameObject.h"
+#include "Material.h"
 
 class Box : public GameObject
 {
@@ -15,6 +16,8 @@ public:
     
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
+    virtual Material *getMaterial() const;
+    
 private:
     glm::vec3 scale;
 };

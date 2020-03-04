@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Application.h"
 #include "Button.h"
+#include "GameObject.h"
 
 using namespace physx;
 
@@ -24,12 +25,9 @@ void Physics::onContact(const PxContactPairHeader& pairHeader, const PxContactPa
         PxActor *actor1 = pairHeader.actors[i];
         PxActor *actor2 = pairHeader.actors[(i+1)%2];
 
-        if (actor1->userData != nullptr) {
-            for (Button &button : app.buttons) {
-                if (button.body == actor1) {
-                    static_cast<Button *>(actor1->userData)->onContact(actor2);
-                }
-            }
+        GameObject *obj = static_cast<GameObject *>(actor1->userData);
+        if (dynamic_cast<Button *>(obj)) {
+            static_cast<Button *>(obj)->onContact(actor2);
         }
     }
 }

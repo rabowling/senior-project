@@ -1,5 +1,6 @@
 #include "ShaderManager.h"
 #include "Utils.h"
+#include "Application.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -59,6 +60,7 @@ void ShaderManager::bind(std::string shaderName) {
     if (shaders.find(shaderName) != shaders.end()) {
         if (active != &shaders[shaderName]) {
             active = &shaders[shaderName];
+            app.materialManager.active = nullptr;
             active->bind();
         }
     }

@@ -14,4 +14,5 @@ public:
     bool pressed = false;
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
+    virtual Material *getMaterial() const;
 };

@@ -5,6 +5,7 @@
 #include "ShaderManager.h"
 #include "MatrixStack.h"
 #include "GameObject.h"
+#include "Material.h"
 
 class Wall : public GameObject {
     public:
@@ -12,6 +13,7 @@ class Wall : public GameObject {
         void draw(MatrixStack &M, const bool isCubemap);
         virtual Shape *getModel() const;
         virtual glm::mat4 getTransform() const;
+        virtual Material *getMaterial() const;
     
         physx::PxVec3 size;
     private:

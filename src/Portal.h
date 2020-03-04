@@ -23,6 +23,7 @@ public:
 
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
+    virtual Material *getMaterial() const;
 
     glm::vec3 getUp();
     glm::vec3 getForward();

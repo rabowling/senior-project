@@ -13,7 +13,7 @@ void Button::onContact(PxActor *other) {
 }
 
 void Button::init(physx::PxVec3 location) {
-    PxShape *shape = app.physics.getPhysics()->createShape(PxBoxGeometry(1, 0.4, 1), *app.physics.defaultMaterial);
+    PxShape *shape = app.physics.getPhysics()->createShape(PxBoxGeometry(1.5, 0.2, 1.5), *app.physics.defaultMaterial);
     body = app.physics.getPhysics()->createRigidStatic(PxTransform(location));
     body->attachShape(*shape);
     app.physics.getScene()->addActor(*body);
@@ -27,15 +27,20 @@ void Button::draw(MatrixStack &M) {
     PxTransform t = body->getGlobalPose();
     M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-    app.modelManager.draw("cylinder");
+    app.materialManager.bind(pressed ? "buttonDown" : "buttonUp");
+    app.modelManager.draw("button");
     M.popMatrix();
 }
 
 Shape *Button::getModel() const {
-    return app.modelManager.get("cylinder");
+    return app.modelManager.get("button");
 }
 
 glm::mat4 Button::getTransform() const {
     PxTransform t = body->getGlobalPose();
     return glm::translate(glm::mat4(1), px2glm(t.p));
+}
+
+Material *Button::getMaterial() const {
+    return app.materialManager.get(pressed ? "buttonDown" : "buttonUp");
 }

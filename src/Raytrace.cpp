@@ -3,6 +3,7 @@
 #include <vector>
 #include "Application.h"
 #include "GameObject.h"
+#include "Material.h"
 #include <list>
 #include <fstream>
 #include <iostream>
@@ -121,77 +122,88 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         }
     }
 
-    vec2 uv = hit.u * vt[1] + hit.v * vt[2] + (1 - hit.u - hit.v) * vt[0];
+    vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
+    vec3 lightPos = app.lightPos;
 
-    Texture *texture;
-    if (dynamic_cast<Wall *>(hit.obj)) {
-        texture = app.textureManager.get("concrete");
-        Wall *wall = static_cast<Wall *>(hit.obj);
-        if (dot(vn[0], vec3(1, 0, 0)) != 0) {
-            uv.x *= wall->size.y;
-            uv.y *= wall->size.z;
-        } else if (dot(vn[0], vec3(0, 1, 0)) != 0) {
-            uv.x *= wall->size.x;
-            uv.y *= wall->size.z;
-        } else if (dot(vn[0], vec3(0, 0, 1)) != 0) {
-            uv.x *= wall->size.y;
-            uv.y *= wall->size.x;
+    Material *material = hit.obj->getMaterial();
+    vec3 color;
+    if (material) {
+        Texture *texture = material->getTexture();
+        vec2 uv = hit.u * vt[1] + hit.v * vt[2] + (1 - hit.u - hit.v) * vt[0];
+
+        // scale UV for Wall objects
+        if (dynamic_cast<Wall *>(hit.obj)) {
+            Wall *wall = static_cast<Wall *>(hit.obj);
+            if (dot(vn[0], vec3(1, 0, 0)) != 0) {
+                uv.x *= wall->size.y;
+                uv.y *= wall->size.z;
+            } else if (dot(vn[0], vec3(0, 1, 0)) != 0) {
+                uv.x *= wall->size.x;
+                uv.y *= wall->size.z;
+            } else if (dot(vn[0], vec3(0, 0, 1)) != 0) {
+                uv.x *= wall->size.y;
+                uv.y *= wall->size.x;
+            }
         }
+
+        if (uv.x > 1.0f) {
+            uv.x = fmod(uv.x, 1.0f);
+        }
+        if (uv.y > 1.0f) {
+            uv.y = fmod(uv.y, 1.0f);
+        }
+
+        uv.x *= texture->width;
+        uv.y *= texture->height;
+
+        // blerp
+        ivec2 center = round(uv);
+        vec2 delta = (vec2) center - uv + 0.5f;
+        vec3 texColor(0);
+        for (int x = 0; x < 2; x++) {
+            for (int y = 0; y < 2; y++) {
+                int idxX = center.x + x - 1;
+                int idxY = center.y + y - 1;
+
+                if (idxX == texture->width) {
+                    idxX = 0;
+                }
+                else if (idxX == -1) {
+                    idxX = texture->width - 1;
+                }
+                if (idxY == texture->height) {
+                    idxY = 0;
+                }
+                else if (idxY == -1) {
+                    idxY = texture->height - 1;
+                }
+
+                int idx = idxY * texture->width + idxX;
+                vec3 sample;
+                for (int i = 0; i < 3; i++) {
+                    sample[i] = texture->data[idx*3+i];
+                }
+                texColor += sample * (x == 0 ? delta.x : 1 - delta.x) * (y == 0 ? delta.y : 1 - delta.y);
+            }
+        }
+
+        // Blinn-Phong shading
+        vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
+        vec3 lightDir = normalize(lightPos - hitPos);
+        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
+        vec3 viewDir = normalize(app.player.camera.eye - hitPos);
+        vec3 H = normalize((lightDir + viewDir) / 2.f);
+        vec3 specular = material->spec * glm::pow(std::max(0.f, dot(H, normal)), 12.8f);
+        vec3 ambient = material->amb * texColor;
+
+        color = diffuse + specular + ambient;
+    }
+    else if (dynamic_cast<Portal *>(hit.obj)) {
+        color = vec3(0, 1, 1);
     }
     else {
-        texture = app.textureManager.get("marble");
+        color = vec3(1);
     }
-
-    if (uv.x > 1.0f) {
-        uv.x = fmod(uv.x, 1.0f);
-    }
-    if (uv.y > 1.0f) {
-        uv.y = fmod(uv.y, 1.0f);
-    }
-
-    uv.x *= texture->width;
-    uv.y *= texture->height;
-
-    // blerp
-    ivec2 center = round(uv);
-    vec2 delta = (vec2) center - uv + 0.5f;
-    vec3 texColor(0);
-    for (int x = 0; x < 2; x++) {
-        for (int y = 0; y < 2; y++) {
-            int idxX = center.x + x - 1;
-            int idxY = center.y + y - 1;
-
-            if (idxX == texture->width) {
-                idxX = 0;
-            }
-            else if (idxX == -1) {
-                idxX = texture->width - 1;
-            }
-            if (idxY == texture->height) {
-                idxY = 0;
-            }
-            else if (idxY == -1) {
-                idxY = texture->height - 1;
-            }
-
-            int idx = idxY * texture->width + idxX;
-            vec3 sample;
-            for (int i = 0; i < 3; i++) {
-                sample[i] = texture->data[idx*3+i];
-            }
-            texColor += sample * (x == 0 ? delta.x : 1 - delta.x) * (y == 0 ? delta.y : 1 - delta.y);
-        }
-    }
-
-    // Blinn-Phong shading
-    vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
-    vec3 lightPos(30, 8, 30);
-    vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
-    vec3 lightDir = normalize(lightPos - hitPos);
-    vec3 diffuse = texColor * std::max(0.f, dot(normal, lightDir));
-    vec3 viewDir = normalize(app.player.camera.eye - hitPos);
-    vec3 H = normalize((lightDir + viewDir) / 2.f);
-    vec3 specular = vec3(1) * glm::pow(std::max(0.f, dot(H, normal)), 12.8f);
 
     // Shadow rays
     RayHit shadowRayHit;
@@ -202,7 +214,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         }
     }
 
-    return (diffuse + specular) * shadow;
+    return color * shadow;
 }
 
 void renderRT(int width, int height, const std::string &filename) {

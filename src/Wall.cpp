@@ -26,6 +26,7 @@ void Wall::draw(MatrixStack &M, const bool isCubemap) {
     if (!isCubemap) {
         glUniform3f(app.shaderManager.getUniform("scale"), size.x, size.y, size.z);
     }
+    app.materialManager.bind("concrete");
     app.modelManager.draw("cube");
     M.popMatrix();
 }
@@ -37,4 +38,8 @@ Shape *Wall::getModel() const {
 glm::mat4 Wall::getTransform() const {
     PxTransform t = gWall->getGlobalPose();
     return scale(translate(mat4(1), px2glm(t.p)) * mat4_cast(px2glm(t.q)), px2glm(size));
+}
+
+Material *Wall::getMaterial() const {
+    return app.materialManager.get("concrete");
 }

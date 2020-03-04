@@ -7,6 +7,7 @@
 #include "ShaderManager.h"
 #include "TextureManager.h"
 #include "ModelManager.h"
+#include "MaterialManager.h"
 #include "WindowManager.h"
 #include "Player.h"
 #include "Controls.h"
@@ -30,6 +31,7 @@ public:
     ShaderManager shaderManager;
     TextureManager textureManager;
     ModelManager modelManager;
+    MaterialManager materialManager;
     WindowManager windowManager;
     Player player;
     Controls controls;

@@ -105,3 +105,7 @@ Shape *Portal::getModel() const {
 glm::mat4 Portal::getTransform() const {
     return glm::scale(translate(mat4(1), position) * mat4_cast(orientation), scale);
 }
+
+Material *Portal::getMaterial() const {
+    return nullptr;
+}

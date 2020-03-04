@@ -118,7 +118,7 @@ void Controls::update() {
         glfwSetWindowShouldClose(handle, true);
     }
     if (glfwGetKey(handle, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
-        renderRT(400, 200, "screenshot" + to_string(app.stepCount) + ".ppm");
+        renderRT(1280, 720, "screenshot" + to_string(app.stepCount) + ".ppm");
     }
 }
 
