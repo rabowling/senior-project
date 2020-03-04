@@ -33,10 +33,10 @@ public:
     Portal *linkedPortal = nullptr;
     glm::vec3 localForward = glm::vec3(0, 1, 0);
     glm::vec3 localUp = glm::vec3(0, 0, -1);
+    glm::vec3 position;
+    glm::quat orientation;
 private:
     bool hasOutline;
-    glm::vec3 position;
     glm::vec3 scale = glm::vec3(1);
     glm::vec3 color = glm::vec3(1, 1, 1);
-    glm::quat orientation;
 };

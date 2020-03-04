@@ -126,7 +126,6 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
     vec3 lightPos = app.lightPos;
 
     Material *material = hit.obj->getMaterial();
-    vec3 color;
     if (material) {
         Texture *texture = material->getTexture();
         vec2 uv = hit.u * vt[1] + hit.v * vt[2] + (1 - hit.u - hit.v) * vt[0];
@@ -191,30 +190,39 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
         vec3 lightDir = normalize(lightPos - hitPos);
         vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
-        vec3 viewDir = normalize(app.player.camera.eye - hitPos);
-        vec3 H = normalize((lightDir + viewDir) / 2.f);
-        vec3 specular = material->spec * glm::pow(std::max(0.f, dot(H, normal)), 12.8f);
+        vec3 H = normalize((lightDir - dir) / 2.f);
+        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * 255.f;
         vec3 ambient = material->amb * texColor;
 
-        color = diffuse + specular + ambient;
+        // Shadow rays
+        RayHit shadowRayHit;
+        float shadow = 1;
+        if (traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)) {
+            if (shadowRayHit.d < distance(lightPos, hitPos)) {
+                shadow = 0;
+            }
+        }
+
+        return shadow * (diffuse + specular) + ambient;
     }
     else if (dynamic_cast<Portal *>(hit.obj)) {
-        color = vec3(0, 1, 1);
+        Portal *portal = static_cast<Portal *>(hit.obj);
+
+        MatrixStack camTransform;
+        camTransform.translate(portal->linkedPortal->position);
+        camTransform.rotate(M_PI, portal->linkedPortal->getUp());
+        camTransform.rotate(portal->linkedPortal->orientation);
+        camTransform.rotate(inverse(portal->orientation));
+        camTransform.translate(-portal->position);
+
+        vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
+        vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
+        vec3 newDir = normalize(newOrig - newEye);
+        return traceColor(newOrig, newDir);
     }
     else {
-        color = vec3(1);
+        return vec3(255);
     }
-
-    // Shadow rays
-    RayHit shadowRayHit;
-    float shadow = 1;
-    if (traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)) {
-        if (shadowRayHit.d < distance(lightPos, hitPos)) {
-            shadow = 0;
-        }
-    }
-
-    return color * shadow;
 }
 
 void renderRT(int width, int height, const std::string &filename) {
