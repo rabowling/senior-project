@@ -213,13 +213,51 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         // Shadow rays
         RayHit shadowRayHit;
         float shadow = 1;
-        if (traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)) {
-            if (shadowRayHit.d < distance(lightPos, hitPos)) {
-                shadow = 0;
+        if (!traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)
+                || shadowRayHit.d > distance(lightPos, hitPos)) {
+            shadow = 0;
+        }
+        else {
+            for (Portal &portal : app.portals) {
+                MatrixStack camTransform;
+                camTransform.translate(portal.linkedPortal->position);
+                camTransform.rotate(M_PI, portal.linkedPortal->getUp());
+                camTransform.rotate(portal.linkedPortal->orientation);
+                camTransform.rotate(inverse(portal.orientation));
+                camTransform.translate(-portal.position);
+
+                MatrixStack camTransform2;
+                camTransform2.translate(portal.position);
+                camTransform2.rotate(M_PI, portal.getUp());
+                camTransform2.rotate(portal.orientation);
+                camTransform2.rotate(inverse(portal.linkedPortal->orientation));
+                camTransform2.translate(-portal.linkedPortal->position);
+
+                vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(lightPos, 1));
+                if (traceScene(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
+                        && shadowRayHit.obj == &portal) {
+                    vec3 vert2[3];
+                    Shape *model2 = shadowRayHit.obj->getModel();
+                    for (int vNum = 0; vNum < 3; vNum++) {
+                        unsigned int vIdx = model2->eleBuf[shadowRayHit.faceIndex*3+vNum];
+                        for (int i = 0; i < 3; i++) {
+                            vert2[vNum][i] = shadowRayHit.obj->posBufCache[vIdx*3+i];
+                        }
+                    }
+
+                    vec3 hitPos2 = shadowRayHit.u * vert2[1] + shadowRayHit.v * vert2[2] + (1 - shadowRayHit.u - shadowRayHit.v) * vert2[0];
+                    vec3 newEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
+                    vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos2, 1));
+                    vec3 newDir = normalize(newOrig - newEye);
+                    if (!traceScene(newOrig, newDir, shadowRayHit) || shadowRayHit.d > distance(lightPos, newOrig)) {
+                        shadow = 0;
+                        break;
+                    }
+                }
             }
         }
 
-        return shadow * (diffuse + specular) + ambient;
+        return (1 - shadow) * (diffuse + specular) + ambient;
     }
     else if (dynamic_cast<Portal *>(hit.obj)) {
         Portal *portal = static_cast<Portal *>(hit.obj);
