@@ -27,7 +27,9 @@ void Button::draw(MatrixStack &M) {
     PxTransform t = body->getGlobalPose();
     M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-    app.materialManager.bind(pressed ? "buttonDown" : "buttonUp");
+    if (!app.renderingCubemap) {
+        app.materialManager.bind(pressed ? "buttonDown" : "buttonUp");
+    }
     app.modelManager.draw("button");
     M.popMatrix();
 }

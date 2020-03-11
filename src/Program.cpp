@@ -125,7 +125,7 @@ GLint Program::getAttribute(const std::string &name) const
 	{
 		if (isVerbose())
 		{
-			//std::cout << name << " is not an attribute variable" << std::endl;
+			std::cout << name << " is not an attribute variable" << std::endl;
 		}
 		return -1;
 	}
@@ -139,7 +139,7 @@ GLint Program::getUniform(const std::string &name) const
 	{
 		if (isVerbose())
 		{
-			//std::cout << name << " is not a uniform variable" << std::endl;
+			std::cout << name << " is not a uniform variable" << std::endl;
 		}
 		return -1;
 	}

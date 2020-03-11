@@ -113,7 +113,7 @@ void Application::render(float dt) {
     MatrixStack M;
 
     // Render entire scene
-    drawScene(P, V, player.camera, false);
+    drawScene(P, V, player.camera);
 
     // Draw geometry of portals to stencil buffer
     shaderManager.bind("portal");
@@ -152,7 +152,7 @@ void Application::render(float dt) {
         linkedPortal->updateCamera(player.camera);
         mat4 portalV = linkedPortal->camera.getLookAt();
         mat4 portalP = linkedPortal->modifyProjectionMatrix(P, portalV);
-        drawScene(portalP, portalV, linkedPortal->camera, false);
+        drawScene(portalP, portalV, linkedPortal->camera);
 
         shaderManager.bind("portal");
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(portalP));
@@ -167,6 +167,7 @@ void Application::render(float dt) {
 }
 
 void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &camera) {
+    app.renderingCubemap = true;
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -193,18 +194,18 @@ void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &ca
     glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 
     glCullFace(GL_FRONT);
-    drawScene(P, V, camera, true);
+    drawScene(P, V, camera);
     glCullFace(GL_BACK);
+    app.renderingCubemap = false;
 }
 
-void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, const bool isCubemap) {
+void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) {
     MatrixStack M;
 
-    if (!isCubemap) {
+    if (!renderingCubemap) {
         shaderManager.bind("tex");
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
-        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
@@ -216,10 +217,9 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         box.draw(M);
     }
 
-    if (!isCubemap) {
+    if (!renderingCubemap) {
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
-        glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
@@ -231,10 +231,9 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         button.draw(M);
     }
 
-    if (!isCubemap) {
+    if (!renderingCubemap) {
         // Set up wall shader colors here
         shaderManager.bind("wall");
-        //glUniform3f(shaderManager.getUniform("dirLightDir"), 0, 1, 1);
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 	    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform1f(shaderManager.getUniform("farPlane"), far);
@@ -245,7 +244,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, 
         glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
     }
     for (Wall &wall : walls) {
-        wall.draw(M, isCubemap);
+        wall.draw(M);
     }
 }
 

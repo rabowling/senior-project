@@ -54,6 +54,7 @@ public:
     float near = 1.0f;
     float far = 100.0f;
     float lightSpeed = 5.0f;
+    bool renderingCubemap = false;
 
     void run(const std::vector<std::string> &args);
 private:

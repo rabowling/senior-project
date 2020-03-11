@@ -10,7 +10,7 @@
 class Wall : public GameObject {
     public:
         void init(physx::PxVec3 position, physx::PxVec3 size, physx::PxQuat orientation);
-        void draw(MatrixStack &M, const bool isCubemap);
+        void draw(MatrixStack &M);
         virtual Shape *getModel() const;
         virtual glm::mat4 getTransform() const;
         virtual Material *getMaterial() const;

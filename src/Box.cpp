@@ -23,8 +23,10 @@ void Box::draw(MatrixStack &M) {
     M.translate(glm::vec3(t.p.x, t.p.y, t.p.z));
     M.rotate(glm::quat(t.q.w, t.q.x, t.q.y, t.q.z));
     M.scale(scale);
+    if (!app.renderingCubemap) {
+        app.materialManager.bind("marble");
+    }
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
-    app.materialManager.bind("marble");
     app.modelManager.draw("cube");
     M.popMatrix();
 }
