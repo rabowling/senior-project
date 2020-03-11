@@ -203,21 +203,22 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         }
 
         // Blinn-Phong shading
-        vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
-        vec3 lightDir = normalize(lightPos - hitPos);
-        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
-        vec3 H = normalize((lightDir - dir) / 2.f);
-        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * 255.f;
         vec3 ambient = material->amb * texColor;
+        vec3 color = ambient;
+        vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
 
         // Shadow rays
         RayHit shadowRayHit;
-        float shadow = 1;
         if (!traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)
                 || shadowRayHit.d > distance(lightPos, hitPos)) {
-            shadow = 0;
+            vec3 lightDir = normalize(lightPos - hitPos);
+            vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
+            vec3 H = normalize((lightDir - dir) / 2.f);
+            vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * 255.f;
+            color = color + diffuse + specular;
         }
         else {
+            // Check for light through portals
             for (Portal &portal : app.portals) {
                 MatrixStack camTransform;
                 camTransform.translate(portal.linkedPortal->position);
@@ -245,19 +246,25 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
                         }
                     }
 
-                    vec3 hitPos2 = shadowRayHit.u * vert2[1] + shadowRayHit.v * vert2[2] + (1 - shadowRayHit.u - shadowRayHit.v) * vert2[0];
-                    vec3 newEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
-                    vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos2, 1));
-                    vec3 newDir = normalize(newOrig - newEye);
-                    if (!traceScene(newOrig, newDir, shadowRayHit) || shadowRayHit.d > distance(lightPos, newOrig)) {
-                        shadow = 0;
-                        break;
+                    vec3 shadowHitPos = shadowRayHit.u * vert2[1] + shadowRayHit.v * vert2[2] + (1 - shadowRayHit.u - shadowRayHit.v) * vert2[0];
+                    vec3 shadowEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
+                    vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
+                    vec3 shadowDir = normalize(shadowOrig - shadowEye);
+                    if (!traceScene(shadowOrig, shadowDir, shadowRayHit) || shadowRayHit.d > distance(lightPos, shadowOrig)) {
+                        vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
+                        vec3 newOrig = shadowEye;
+                        vec3 newDir = normalize(newOrig - newEye);
+                        vec3 lightDir = normalize(newLightPos - hitPos);
+                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
+                        vec3 H = normalize((lightDir - newDir) / 2.f);
+                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * 255.f;
+                        color = color + diffuse + specular;
                     }
                 }
             }
         }
 
-        return (1 - shadow) * (diffuse + specular) + ambient;
+        return color;
     }
     else if (dynamic_cast<Portal *>(hit.obj)) {
         Portal *portal = static_cast<Portal *>(hit.obj);
