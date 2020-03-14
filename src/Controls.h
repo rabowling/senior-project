@@ -26,6 +26,7 @@ public:
     float getMouseDeltaX() { return mouseDeltaX; }
     float getMouseDeltaY() { return mouseDeltaY; }
     void init(InputMode mode = NORMAL, std::string recordingFile = "");
+    bool playbackFinished();
 private:
     void handleEvent(InputEvent e);
     void recordFrame();

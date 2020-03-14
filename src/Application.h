@@ -28,6 +28,7 @@ const unsigned int SHADOW_HEIGHT = 1024;
 class Application
 {
 public:
+    enum RenderMode { RENDER_OPENGL, RENDER_RAYTRACE };
     Physics physics;
     ShaderManager shaderManager;
     TextureManager textureManager;
@@ -56,7 +57,7 @@ public:
     float lightSpeed = 5.0f;
     bool renderingCubemap = false;
 
-    void run(const std::vector<std::string> &args);
+    void run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
 private:
     void render(float dt);
     void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);

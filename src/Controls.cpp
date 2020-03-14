@@ -215,3 +215,7 @@ void Controls::handleEvent(InputEvent e) {
         pressed.insert(e);
     }
 }
+
+bool Controls::playbackFinished() {
+    return inputFrames.size() == 0;
+}

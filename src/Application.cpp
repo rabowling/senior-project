@@ -20,26 +20,11 @@ using namespace glm;
 
 Application app;
 
-void Application::run(const vector<string> &args) {
+void Application::run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode) {
     windowManager.init(1280, 720);
     physics.init();
     player.init();
-
-    if (args.size() == 1) {
-        controls.init();
-    }
-    else if (args.size() == 3) {
-        if (args[1] == "-r") {
-            controls.init(Controls::RECORD, args[2]);
-        }
-        else if (args[1] == "-p") {
-            controls.init(Controls::PLAYBACK, args[2]);
-        }
-        else {
-            cout << "Invalid args" << endl;
-            exit(-1);
-        }
-    }
+    controls.init(inputMode, recordFilename);
 
     loadLevel("../resources/levels/level1.txt");
     initCubemap();
@@ -60,11 +45,20 @@ void Application::run(const vector<string> &args) {
         controls.update();
         player.update(1.0f / 60.0f);
         physics.getScene()->simulate(1.0f / 60.0f);
-        stepCount++;
         physics.getScene()->fetchResults(true);
         render(1.0f / 60.0f);
         glfwSwapBuffers(windowManager.getHandle());
         glfwPollEvents();
+
+        if (renderMode == RENDER_RAYTRACE) {
+            string numString = to_string(stepCount);
+            numString = string(5 - numString.length(), '0') + numString;
+            renderRT(1920, 1080, "render/frame" + numString + ".ppm");
+            if (controls.playbackFinished()) {
+                break;
+            }
+        }
+        stepCount++;
     }
 
     windowManager.shutdown();
