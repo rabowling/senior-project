@@ -4,121 +4,17 @@
 #include "Application.h"
 #include "GameObject.h"
 #include "Material.h"
+#include "KDTree.h"
 #include <list>
 #include <fstream>
 #include <iostream>
 
-#define EPSILON 0.00001
-
 using namespace glm;
 using namespace std;
 
-bool intersectRayTriangle(const glm::vec3 &orig, const glm::vec3 &dir, const glm::vec3 &v0, const glm::vec3 &v1,
-    const glm::vec3 &v2, float &d, float &u, float &v)
-{
-    vec3 edge1 = v1 - v0;
-    vec3 edge2 = v2 - v0;
-    vec3 pvec = cross(dir, edge2);
-    float det = dot(edge1, pvec);
-
-    if (det < EPSILON) {
-        return false;
-    }
-
-    vec3 tvec = orig - v0;
-    u = dot(tvec, pvec);
-    if (u < 0 || u > det) {
-        return false;
-    }
-
-    vec3 qvec = cross(tvec, edge1);
-    v = dot(dir, qvec);
-    if (v < 0 || u + v > det) {
-        return false;
-    }
-
-    d = dot(edge2, qvec);
-    float inv_det = 1 / det;
-    d *= inv_det;
-    u *= inv_det;
-    v *= inv_det;
-
-    return d > -EPSILON;
-}
-
-bool compare(const RayHit &r1, const RayHit &r2) {
-    if (abs(r1.d - r2.d) < 0.001) {
-        if (dynamic_cast<Portal *>(r1.obj)) {
-            return true;
-        }
-        else if (dynamic_cast<Portal *>(r2.obj)) {
-            return false;
-        }
-        else if (dynamic_cast<PortalOutline *>(r1.obj)) {
-            if (dynamic_cast<Portal *>(r2.obj)) {
-                return false;
-            }
-            else {
-                return true;
-            }
-        }
-        else if (dynamic_cast<PortalOutline *>(r2.obj)) {
-            if (dynamic_cast<Portal *>(r1.obj)) {
-                return false;
-            }
-            else {
-                return true;
-            } 
-        }
-    }
-    return r1.d < r2.d;
-}
-
-bool intersectRayShape(const glm::vec3 &orig, const glm::vec3 &dir, const std::vector<float> &posBuf, const std::vector<unsigned int> eleBuf,
-    RayHit &closestHit)
-{
-    bool success = false;
-    for (int fIdx = 0; fIdx < eleBuf.size() / 3; fIdx++) {
-        vec3 v[3];
-        for (int vNum = 0; vNum < 3; vNum++) {
-            unsigned int vIdx = eleBuf[fIdx*3+vNum];
-            for (int i = 0; i < 3; i++) {
-                v[vNum][i] = posBuf[vIdx*3+i];
-            }
-        }
-
-        RayHit hit;
-        if (intersectRayTriangle(orig, dir, v[0], v[1], v[2], hit.d, hit.u, hit.v)) {
-            if (!success || hit.d < closestHit.d) {
-                success = true;
-                hit.faceIndex = fIdx;
-                closestHit = hit;
-            }
-        }
-    }
-    return success;
-}
-
-bool traceScene(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &closestHit) {
-    bool success = false;
-    
-    for (GameObject *obj : app.gameObjects) {
-        RayHit hit;
-        if (intersectRayShape(orig, dir, obj->posBufCache, obj->getModel()->eleBuf, hit)) {
-            hit.obj = obj;
-            if (!success || compare(hit, closestHit)) {
-                success = true;
-                closestHit = hit;
-            }
-        }
-    }
-
-    return success;
-}
-
-glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
+glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<KDNode> &kdtree) {
     RayHit hit;
-    if (!traceScene(orig, dir, hit)) {
+    if (!kdtree->intersect(orig, dir, hit)) {
         return vec3(0, 0, 0);
     }
 
@@ -209,7 +105,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
 
         // Shadow rays
         RayHit shadowRayHit;
-        if (!traceScene(hitPos, normalize(lightPos - hitPos), shadowRayHit)
+        if (!kdtree->intersect(hitPos, normalize(lightPos - hitPos), shadowRayHit)
                 || shadowRayHit.d > distance(lightPos, hitPos)) {
             vec3 lightDir = normalize(lightPos - hitPos);
             vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
@@ -228,7 +124,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
             camTransform2.translate(-portal.linkedPortal->position);
 
             vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(lightPos, 1));
-            if (traceScene(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
+            if (kdtree->intersect(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
                     && shadowRayHit.obj == &portal) {
                 vec3 vert2[3];
                 Shape *model2 = shadowRayHit.obj->getModel();
@@ -250,7 +146,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
                 vec3 shadowEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
                 vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
                 vec3 shadowDir = normalize(shadowOrig - shadowEye);
-                if (!traceScene(shadowOrig, shadowDir, shadowRayHit) || shadowRayHit.d > distance(lightPos, shadowOrig)) {
+                if (!kdtree->intersect(shadowOrig, shadowDir, shadowRayHit) || shadowRayHit.d > distance(lightPos, shadowOrig)) {
                     vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
                     vec3 newOrig = shadowEye;
                     vec3 newDir = normalize(newOrig - newEye);
@@ -278,7 +174,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir) {
         vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
         vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
         vec3 newDir = normalize(newOrig - newEye);
-        return traceColor(newOrig, newDir);
+        return traceColor(newOrig, newDir, kdtree);
     }
     else if (dynamic_cast<PortalOutline *>(hit.obj)) {
         return static_cast<PortalOutline *>(hit.obj)->color * 255.f;
@@ -297,9 +193,7 @@ void renderRT(int width, int height, const std::string &filename) {
     float angle = tan(M_PI * 0.5 * fov / 180);
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
 
-    for (GameObject *obj : app.gameObjects) {
-        obj->cacheGeometry();
-    }
+    unique_ptr<KDNode> kdtree = KDNode::build(app.gameObjects);
 
     #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
@@ -308,7 +202,7 @@ void renderRT(int width, int height, const std::string &filename) {
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
-            pixels[y*width+x] = traceColor(orig, dir);
+            pixels[y*width+x] = traceColor(orig, dir, kdtree);
         }
     }
 
