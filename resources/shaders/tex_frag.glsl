@@ -30,7 +30,7 @@ float ShadowCalculation(vec3 pos)
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
-    float bias = max(0.05 * (1.0 - dot(fragNor, normalize(fragToLight))), 0.005); 
+    float bias = 0;//max(0.0005 * (1.0 - dot(fragNor, normalize(fragToLight))), 0.00001); 
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
     return shadow;
