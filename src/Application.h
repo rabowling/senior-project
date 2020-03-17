@@ -25,6 +25,11 @@
 const unsigned int SHADOW_WIDTH = 1024;
 const unsigned int SHADOW_HEIGHT = 1024;
 
+struct Light {
+    glm::vec3 position;
+    glm::vec3 intensity;
+};
+
 class Application
 {
 public:
@@ -51,6 +56,7 @@ public:
 
     unsigned int depthCubemap;
     unsigned int depthMapFBO;
+    std::vector<Light> lights;
     glm::vec3 lightPos;
     float near = 1.0f;
     float far = 100.0f;

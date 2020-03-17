@@ -37,7 +37,6 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
     }
 
     vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
-    vec3 lightPos = app.lightPos;
 
     Material *material = hit.obj->getMaterial();
     if (material) {
@@ -100,65 +99,69 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
             }
         }
 
-        // Blinn-Phong shading
-        vec3 ambient = material->amb * texColor;
-        vec3 color = ambient;
+        vec3 color(0);
         vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
+        for (const Light &light : app.lights) {
+            // Blinn-Phong shading
+            vec3 ambient = material->amb * texColor * light.intensity;
+            color += ambient;
 
-        // Shadow rays
-        RayHit shadowRayHit;
-        if (!kdtree->intersect(hitPos, normalize(lightPos - hitPos), shadowRayHit)
-                || shadowRayHit.d > distance(lightPos, hitPos)) {
-            vec3 lightDir = normalize(lightPos - hitPos);
-            vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
-            vec3 H = normalize((lightDir - dir) / 2.f);
-            vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * 255.f;
-            color = color + diffuse + specular;
-        }
+            // Shadow rays
+            RayHit shadowRayHit;
+            if (!kdtree->intersect(hitPos, normalize(light.position - hitPos), shadowRayHit)
+                    || shadowRayHit.d > distance(light.position, hitPos)) {
+                vec3 lightDir = normalize(light.position - hitPos);
+                vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
+                vec3 H = normalize((lightDir - dir) / 2.f);
+                vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
+                color += diffuse + specular;
+            }
 
-        // Check for light through portals
-        for (Portal &portal : app.portals) {
-            MatrixStack camTransform2;
-            camTransform2.translate(portal.position);
-            camTransform2.rotate(M_PI, portal.getUp());
-            camTransform2.rotate(portal.orientation);
-            camTransform2.rotate(inverse(portal.linkedPortal->orientation));
-            camTransform2.translate(-portal.linkedPortal->position);
+            // Check for light through portals
+            for (Portal &portal : app.portals) {
+                MatrixStack camTransform2;
+                camTransform2.translate(portal.position);
+                camTransform2.rotate(M_PI, portal.getUp());
+                camTransform2.rotate(portal.orientation);
+                camTransform2.rotate(inverse(portal.linkedPortal->orientation));
+                camTransform2.translate(-portal.linkedPortal->position);
 
-            vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(lightPos, 1));
-            if (kdtree->intersect(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
-                    && shadowRayHit.obj == &portal) {
-                vec3 vert2[3];
-                Shape *model2 = shadowRayHit.obj->getModel();
-                for (int vNum = 0; vNum < 3; vNum++) {
-                    unsigned int vIdx = model2->eleBuf[shadowRayHit.faceIndex*3+vNum];
-                    for (int i = 0; i < 3; i++) {
-                        vert2[vNum][i] = shadowRayHit.obj->posBufCache[vIdx*3+i];
+                vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(light.position, 1));
+                if (kdtree->intersect(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
+                        && shadowRayHit.obj == &portal) {
+                    vec3 vert2[3];
+                    Shape *model2 = shadowRayHit.obj->getModel();
+                    for (int vNum = 0; vNum < 3; vNum++) {
+                        unsigned int vIdx = model2->eleBuf[shadowRayHit.faceIndex*3+vNum];
+                        for (int i = 0; i < 3; i++) {
+                            vert2[vNum][i] = shadowRayHit.obj->posBufCache[vIdx*3+i];
+                        }
+                    }
+
+                    MatrixStack camTransform;
+                    camTransform.translate(portal.linkedPortal->position);
+                    camTransform.rotate(M_PI, portal.linkedPortal->getUp());
+                    camTransform.rotate(portal.linkedPortal->orientation);
+                    camTransform.rotate(inverse(portal.orientation));
+                    camTransform.translate(-portal.position);
+
+                    vec3 shadowHitPos = shadowRayHit.u * vert2[1] + shadowRayHit.v * vert2[2] + (1 - shadowRayHit.u - shadowRayHit.v) * vert2[0];
+                    vec3 shadowEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
+                    vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
+                    vec3 shadowDir = normalize(shadowOrig - shadowEye);
+                    if (!kdtree->intersect(shadowOrig, shadowDir, shadowRayHit) || shadowRayHit.d > distance(light.position, shadowOrig)) {
+                        vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
+                        vec3 newOrig = shadowEye;
+                        vec3 newDir = normalize(newOrig - newEye);
+                        vec3 lightDir = normalize(newLightPos - hitPos);
+                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
+                        vec3 H = normalize((lightDir - newDir) / 2.f);
+                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
+                        color = color + diffuse + specular;
                     }
                 }
-
-                MatrixStack camTransform;
-                camTransform.translate(portal.linkedPortal->position);
-                camTransform.rotate(M_PI, portal.linkedPortal->getUp());
-                camTransform.rotate(portal.linkedPortal->orientation);
-                camTransform.rotate(inverse(portal.orientation));
-                camTransform.translate(-portal.position);
-
-                vec3 shadowHitPos = shadowRayHit.u * vert2[1] + shadowRayHit.v * vert2[2] + (1 - shadowRayHit.u - shadowRayHit.v) * vert2[0];
-                vec3 shadowEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
-                vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
-                vec3 shadowDir = normalize(shadowOrig - shadowEye);
-                if (!kdtree->intersect(shadowOrig, shadowDir, shadowRayHit) || shadowRayHit.d > distance(lightPos, shadowOrig)) {
-                    vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
-                    vec3 newOrig = shadowEye;
-                    vec3 newDir = normalize(newOrig - newEye);
-                    vec3 lightDir = normalize(newLightPos - hitPos);
-                    vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir));
-                    vec3 H = normalize((lightDir - newDir) / 2.f);
-                    vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * 255.f;
-                    color = color + diffuse + specular;
-                }
             }
+
         }
 
         return color;

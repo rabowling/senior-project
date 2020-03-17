@@ -350,6 +350,7 @@ void Application::loadLevel(string levelFile) {
             Light light;
             light.position = vec3(data[0], data[1], data[2]);
             light.intensity = vec3(data[3], data[4], data[5]);
+            lights.push_back(light);
         }
     }
     in.close();
