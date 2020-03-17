@@ -8,6 +8,8 @@
 #include <list>
 #include <fstream>
 #include <iostream>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 using namespace glm;
 using namespace std;
@@ -185,7 +187,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
 }
 
 void renderRT(int width, int height, const std::string &filename) {
-    vec3 *pixels = new vec3[width * height];
+    unsigned char *pixels = new unsigned char[width * height * 3];
     float fov = 45;
     float invHeight = 1.0f / height;
     float invWidth = 1.0f / width;
@@ -202,18 +204,12 @@ void renderRT(int width, int height, const std::string &filename) {
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
-            pixels[y*width+x] = traceColor(orig, dir, kdtree);
+            vec3 pixel = traceColor(orig, dir, kdtree);
+            for (int i = 0; i < 3; i++) {
+                pixels[(y*width+x)*3+i] = (unsigned char) (std::max(0, std::min(255, (int) round(pixel[i]))));
+            }
         }
     }
-
-    std::ofstream ofs(filename, std::ios::out | std::ios::binary); 
-    ofs << "P6\n" << width << " " << height << "\n255\n"; 
-    for (unsigned i = 0; i < width * height; ++i) { 
-        ofs << (unsigned char)(std::min(255, (int) round(pixels[i].r))) << 
-               (unsigned char)(std::min(255, (int) round(pixels[i].g))) << 
-               (unsigned char)(std::min(255, (int) round(pixels[i].b))); 
-    }
-    ofs.close(); 
-
+    stbi_write_png(filename.c_str(), width, height, 3, pixels, width * 3);
     delete[] pixels;
 }

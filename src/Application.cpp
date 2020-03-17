@@ -53,7 +53,7 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
         if (renderMode == RENDER_RAYTRACE) {
             string numString = to_string(stepCount);
             numString = string(5 - numString.length(), '0') + numString;
-            renderRT(1920, 1080, "render/frame" + numString + ".ppm");
+            renderRT(1920, 1080, "render/frame" + numString + ".png");
             if (controls.playbackFinished()) {
                 break;
             }
@@ -101,7 +101,7 @@ void Application::render(float dt) {
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilMask(0xFF);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    glClearColor(.12f, .34f, .56f, 1.0f);
+    glClearColor(0, 0, 0, 1);
     glStencilMask(0x00);
     // Create MVP matrices
     MatrixStack M;
@@ -340,6 +340,16 @@ void Application::loadLevel(string levelFile) {
             PxVec3 pos(data[0], data[1], data[2]);
             buttons.push_back(Button());
             buttons.rbegin()->init(pos);
+        }
+        else if (type == "light") {
+            float data[6];
+            for (int i = 0; i < 6; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            Light light;
+            light.position = vec3(data[0], data[1], data[2]);
+            light.intensity = vec3(data[3], data[4], data[5]);
         }
     }
     in.close();
