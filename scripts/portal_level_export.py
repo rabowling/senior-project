@@ -56,6 +56,9 @@ def serialize_object(collection, obj):
     elif collection == 'Portals':
         return ('portal {id} {link} {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.w} {r.x} {r.y} {r.z}'
             .format(id = obj["id"], link = obj["link"], t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
+    elif collection == 'Lights':
+        return ('light {t.x} {t.y} {t.z} {c.r} {c.g} {c.b}'
+            .format(t = m.to_translation(), c = obj.data.color))
     else:
         return None
 
