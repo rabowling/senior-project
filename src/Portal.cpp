@@ -31,7 +31,7 @@ void Portal::draw(MatrixStack &M) {
     M.translate(position);
     M.rotate(orientation);
     M.scale(scale);
-    if (!app.renderingCubemap) {
+    if (!app.renderingCubemap && !app.renderingLightMaps) {
         glUniform3fv(app.shaderManager.getUniform("outlinecolor"), 1, value_ptr(hasOutline ? outline->color : vec3(1)));
     }
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));

@@ -91,7 +91,11 @@ void Application::render(float dt) {
         lightPos += vec3(0,-1,0) * dt * lightSpeed;
     }
 
+    // Create MVP matrices
+    MatrixStack M;
+
     renderToCubemap(P, V, player.camera);
+    renderLightMaps(P, V, M, player.camera);
 
     glViewport(0, 0, width, height);
 
@@ -103,14 +107,16 @@ void Application::render(float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glClearColor(.12f, .34f, .56f, 1.0f);
     glStencilMask(0x00);
-    // Create MVP matrices
-    MatrixStack M;
 
-    // Render entire scene
-    drawScene(P, V, player.camera);
+    shaderManager.bind("portal");
+    drawScene(P, V, player.camera, "tex", "wall", depthCubemap);
+    renderPortals(P, V, M, player.camera, false);
+    renderPortals(P, V, M, player.camera, true);
+}
+
+void Application::renderPortals(const mat4 &P, const mat4 &V, MatrixStack M, const Camera &camera, bool portalLight) {
 
     // Draw geometry of portals to stencil buffer
-    shaderManager.bind("portal");
     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, value_ptr(V));
     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, value_ptr(P));
     glStencilMask(0xFF);
@@ -140,23 +146,29 @@ void Application::render(float dt) {
     // Render scene through portals
     i = 1;
     for (Portal &portal : portals) {
-        glStencilFunc(GL_EQUAL, i++, 0xFF);
+        int index = i++;
+        glStencilFunc(GL_EQUAL, index, 0xFF);
         glClear(GL_DEPTH_BUFFER_BIT);
         Portal *linkedPortal = portal.linkedPortal;
         linkedPortal->updateCamera(player.camera);
         mat4 portalV = linkedPortal->camera.getLookAt();
         mat4 portalP = linkedPortal->modifyProjectionMatrix(P, portalV);
-        drawScene(portalP, portalV, linkedPortal->camera);
+        if (portalLight) {
+            drawScene(portalP, portalV, linkedPortal->camera, "portallight", "walllight", portalLightDepthMaps[index-1]);
+        } else {
+            drawScene(portalP, portalV, linkedPortal->camera, "tex", "wall", depthCubemap);
+        }
 
-        shaderManager.bind("portal");
-        glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(portalP));
-        glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(portalV));
+        if (!renderingLightMaps) {
+            shaderManager.bind("portal");
+            glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(portalP));
+            glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(portalV));
+        }
         glEnable(GL_POLYGON_OFFSET_FILL);
         for (Portal &portal : portals) {
             portal.draw(M);
         }
         glDisable(GL_POLYGON_OFFSET_FILL);
-
     }
 }
 
@@ -188,16 +200,19 @@ void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &ca
     glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 
     glCullFace(GL_FRONT);
-    drawScene(P, V, camera);
+    drawScene(P, V, camera, "", "", 1);
     glCullFace(GL_BACK);
     app.renderingCubemap = false;
 }
 
-void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) {
+void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera, string shader, string wallShader, unsigned int depthmap) {
     MatrixStack M;
 
-    if (!renderingCubemap) {
-        shaderManager.bind("tex");
+    mat4 LS = lightProjection * lightView;
+
+    if (!renderingCubemap && !renderingLightMaps) {
+        shaderManager.bind(shader);
+        glUniformMatrix4fv(shaderManager.getUniform("lightingMatrix"), 1, GL_FALSE, value_ptr(LS));
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
@@ -205,13 +220,17 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+        if (shader == "tex") {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, depthmap);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, depthmap);
+        }
     }
     for (Box &box : boxes) {
         box.draw(M);
     }
 
-    if (!renderingCubemap) {
+    if (!renderingCubemap && !renderingLightMaps) {
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
@@ -219,15 +238,19 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+        if (shader == "tex") {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, depthmap);
+        } else {
+            glBindTexture(GL_TEXTURE_2D, depthmap);
+        }
     }
     for (Button &button : buttons) {
         button.draw(M);
     }
 
-    if (!renderingCubemap) {
+    if (!renderingCubemap && !renderingLightMaps) {
         // Set up wall shader colors here
-        shaderManager.bind("wall");
+        shaderManager.bind(wallShader);
         glUniform3fv(shaderManager.getUniform("lightPos"), 1, value_ptr(lightPos));
 	    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform1f(shaderManager.getUniform("farPlane"), far);
@@ -235,10 +258,56 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+        if (shader == "tex") {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, depthmap);
+        } else {
+
+            glBindTexture(GL_TEXTURE_2D, depthmap);
+        }
     }
     for (Wall &wall : walls) {
         wall.draw(M);
+    }
+}
+
+void Application::renderLightMaps(const glm::mat4 &P, const glm::mat4 &V, MatrixStack &M, const Camera &camera) {
+    int i = 0;
+
+    app.renderingLightMaps = true;
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    for (Portal portal : portals) {
+        glBindFramebuffer(GL_FRAMEBUFFER, portalLightMapFBOs[i]);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glCullFace(GL_FRONT);
+
+        lightProjection = ortho(-100.0, 100.0, -100.0, 100.0, 0.1, 100.0);
+        lightView = lookAt(lightPos, portal.position, vec3(0,1,0));
+
+        shaderManager.bind("lightmap");
+        glUniformMatrix4fv(shaderManager.getUniform("lightProjection"), 1, GL_FALSE, value_ptr(lightProjection));
+        glUniformMatrix4fv(shaderManager.getUniform("lightView"), 1, GL_FALSE, value_ptr(lightView));
+        renderPortals(P, V, M, camera, true);
+        glCullFace(GL_BACK);
+    }
+
+    app.renderingLightMaps = false;
+}
+
+void Application::initLightMaps() {
+    for (int i = 0; i < NUM_PORTALS; i++) {
+        glGenFramebuffers(1, &portalLightMapFBOs[i]);
+        glGenTextures(1, &portalLightDepthMaps[i]);
+        glBindTexture(GL_TEXTURE_2D, portalLightDepthMaps[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glBindFramebuffer(GL_FRAMEBUFFER, portalLightMapFBOs[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, portalLightDepthMaps[i], 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 }
 

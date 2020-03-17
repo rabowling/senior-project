@@ -21,6 +21,7 @@
 #include <glm/glm.hpp>
 
 #define MAX_PORTALS 256
+#define NUM_PORTALS 4
 
 const unsigned int SHADOW_WIDTH = 1024;
 const unsigned int SHADOW_HEIGHT = 1024;
@@ -57,14 +58,21 @@ public:
     float lightSpeed = 5.0f;
     bool renderingCubemap = false;
 
+    unsigned int portalLightMapFBOs[NUM_PORTALS];
+    unsigned int portalLightDepthMaps[NUM_PORTALS];
+    bool renderingLightMaps = false;
+    glm::mat4 lightProjection, lightView;
+
     void run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
 private:
     void render(float dt);
-    void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
+    void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera, std::string shader, std::string wallShader, unsigned int depthmap);
     void loadLevel(std::string levelFile);
     void renderToCubemap(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
-    void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera, const bool isCubemap);
     void initCubemap();
+    void initLightMaps();
+    void renderLightMaps(const glm::mat4 &P, const glm::mat4 &V, MatrixStack &M, const Camera &camera);
+    void renderPortals(const glm::mat4 &P, const glm::mat4 &V, MatrixStack M, const Camera &camera, bool portalLight);
 };
 
 extern Application app;
