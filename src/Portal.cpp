@@ -24,6 +24,8 @@ void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
     this->position = position;
     this->orientation = orientation;
     camera.init(position, lookDir, getUp());
+    isForwardCached = false;
+    isUpCached = false;
 }
 
 void Portal::draw(MatrixStack &M) {
@@ -58,11 +60,25 @@ void Portal::linkPortal(Portal *other) {
 }
 
 vec3 Portal::getUp() {
-    return vec3(mat4_cast(orientation) * vec4(localUp, 0));
+    if (!isUpCached) {
+        cachedUp = vec3(mat4_cast(orientation) * vec4(localUp, 0));
+        isUpCached = true;
+    }
+    return cachedUp;
 }
 
 vec3 Portal::getForward() {
-    return vec3(mat4_cast(orientation) * vec4(localForward, 0));
+    if (!isForwardCached) {
+        cachedForward = vec3(mat4_cast(orientation) * vec4(localForward, 0));
+        isForwardCached = true;
+    }
+    return cachedForward;
+}
+
+bool Portal::facing(const glm::vec3 &point) {
+    vec3 normal = getForward();
+    float D = -dot(normal, position);
+    return dot(normal, point) + D > 0;
 }
 
 // https://aras-p.info/texts/obliqueortho.html

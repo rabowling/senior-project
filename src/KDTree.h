@@ -20,7 +20,7 @@ struct RayHit {
 struct BBox {
     BBox();
     glm::vec3 bbMin, bbMax;
-    bool intersect(const glm::vec3 &orig, const glm::vec3 &dir);
+    bool intersect(const glm::vec3 &orig, const glm::vec3 &dir, float d = 0);
 };
 
 struct Triangle {
@@ -35,6 +35,7 @@ public:
     static std::unique_ptr<KDNode> build(const std::list<GameObject *> &gameObjects);
     static std::unique_ptr<KDNode> build(const std::vector<Triangle> &tris, int depth);
     bool intersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &hit);
+    bool checkBlocked(const glm::vec3 &orig, const glm::vec3 &dir, float d);
 
 private:
     std::unique_ptr<KDNode> left = nullptr;

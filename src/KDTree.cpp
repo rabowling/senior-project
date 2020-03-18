@@ -32,7 +32,7 @@ BBox::BBox() : bbMin(0), bbMax(0)
 }
 
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
-bool BBox::intersect(const glm::vec3 &orig, const glm::vec3 &dir) {
+bool BBox::intersect(const glm::vec3 &orig, const glm::vec3 &dir, float d) {
     float tmin = (bbMin.x - orig.x) / dir.x;
     float tmax = (bbMax.x - orig.x) / dir.x;
 
@@ -60,11 +60,15 @@ bool BBox::intersect(const glm::vec3 &orig, const glm::vec3 &dir) {
     if ((tmin > tzmax) || (tzmin > tmax))
         return false;
 
-    if (tzmin > tmin)
-        tmin = tzmin;
+    if (d > 0) {
+        if (tzmin > tmin)
+            tmin = tzmin;
 
-    if (tzmax < tmax)
-        tmax = tzmax;
+        if (tzmax < tmax)
+            tmax = tzmax;
+
+        return tmin < d;
+    }
 
     return true;
 }
@@ -251,3 +255,26 @@ bool KDNode::intersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &clos
         return didHit;
     }
 }
+
+bool KDNode::checkBlocked(const glm::vec3 &orig, const glm::vec3 &dir, float d) {
+    if (!bbox.intersect(orig, dir, d)) {
+        return false;
+    }
+
+    if (left->tris.size() > 0 || right->tris.size() > 0) {
+        return left->checkBlocked(orig, dir, d) || right->checkBlocked(orig, dir, d);
+    }
+    else {
+        RayHit hit;
+        for (const Triangle &tri : tris) {
+            if (tri.intersect(orig, dir, hit)) {
+                if (hit.d < d) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+}
+

@@ -21,6 +21,7 @@ public:
     void updateCamera(const Camera &playerCamera);
     void drawOutline(MatrixStack &M);
     glm::mat4 modifyProjectionMatrix(const glm::mat4 &P, const glm::mat4 &V);
+    bool facing(const glm::vec3 &point);
 
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
@@ -37,6 +38,10 @@ public:
     Portal *linkedPortal = nullptr;
     glm::vec3 localForward = glm::vec3(0, 1, 0);
     glm::vec3 localUp = glm::vec3(0, 0, -1);
+    glm::vec3 cachedForward;
+    bool isForwardCached = false;
+    glm::vec3 cachedUp;
+    bool isUpCached = false;
     
     glm::vec3 position;
     glm::quat orientation;

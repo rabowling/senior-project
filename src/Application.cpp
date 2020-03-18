@@ -118,6 +118,10 @@ void Application::render(float dt) {
     glPolygonOffset(-1.0, -1.0);
     int i = 1;
     for (Portal &portal : portals) {
+        if (!portal.facing(player.camera.eye)) {
+            continue;
+        }
+
         glStencilFunc(GL_ALWAYS, i++, 0xFF);
         portal.draw(M);
     }
@@ -128,6 +132,10 @@ void Application::render(float dt) {
 
     i = 1;
     for (Portal &portal : portals) {
+        if (!portal.facing(player.camera.eye)) {
+            continue;
+        }
+
         glStencilFunc(GL_NOTEQUAL, i++, 0xFF);
         if (portal.hasOutline) {
             portal.outline->draw(M);
@@ -140,6 +148,10 @@ void Application::render(float dt) {
     // Render scene through portals
     i = 1;
     for (Portal &portal : portals) {
+        if (!portal.facing(player.camera.eye)) {
+            continue;
+        }
+
         glStencilFunc(GL_EQUAL, i++, 0xFF);
         glClear(GL_DEPTH_BUFFER_BIT);
         Portal *linkedPortal = portal.linkedPortal;

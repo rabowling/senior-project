@@ -119,6 +119,10 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
 
             // Check for light through portals
             for (Portal &portal : app.portals) {
+                if (!(portal.facing(hitPos) && portal.linkedPortal->facing(light.position))) {
+                    continue;
+                }
+
                 MatrixStack camTransform2;
                 camTransform2.translate(portal.position);
                 camTransform2.rotate(M_PI, portal.getUp());
@@ -149,13 +153,11 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
                     vec3 shadowEye = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
                     vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
                     vec3 shadowDir = normalize(shadowOrig - shadowEye);
-                    if (!kdtree->intersect(shadowOrig, shadowDir, shadowRayHit) || shadowRayHit.d > distance(light.position, shadowOrig)) {
-                        vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
-                        vec3 newOrig = shadowEye;
-                        vec3 newDir = normalize(newOrig - newEye);
+                    float d = distance(light.position, shadowOrig);
+                    if (!kdtree->checkBlocked(shadowOrig, shadowDir, d)) {
                         vec3 lightDir = normalize(newLightPos - hitPos);
                         vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
-                        vec3 H = normalize((lightDir - newDir) / 2.f);
+                        vec3 H = normalize((lightDir - dir) / 2.f);
                         vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
                         color = color + diffuse + specular;
                     }
