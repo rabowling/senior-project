@@ -118,7 +118,9 @@ void Controls::update() {
         glfwSetWindowShouldClose(handle, true);
     }
     if (glfwGetKey(handle, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+        float t = glfwGetTime();
         renderRT(1280, 720, "screenshot" + to_string(app.stepCount) + ".png");
+        cout << glfwGetTime() - t << endl;
     }
 }
 

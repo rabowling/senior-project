@@ -3,6 +3,7 @@
 #include "WindowManager.h"
 #include "Camera.h"
 #include "Portal.h"
+#include "MatrixStack.h"
 #include <PxPhysicsAPI.h>
 
 class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCallback
@@ -11,6 +12,7 @@ class Player : public physx::PxUserControllerHitReport, physx::PxQueryFilterCall
         void update(float dt);
         void init();
         void setPosition(float x, float y, float z);
+        void draw(MatrixStack &M);
         
         virtual void onShapeHit(const physx::PxControllerShapeHit &hit);
         virtual void onControllerHit(const physx::PxControllersHit &hit) {}

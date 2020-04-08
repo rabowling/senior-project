@@ -23,9 +23,9 @@ public:
     glm::vec3 lookAtPoint;
     glm::vec3 upVec;
     
-private:
     double pitch = 0;
     double yaw = 0;
+private:
     CameraMode mode = FREE_CAM;
 
     // When in free cam

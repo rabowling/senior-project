@@ -185,3 +185,17 @@ PxQueryHitType::Enum Player::preFilter(const PxFilterData &filterData, const PxS
     
     return PxQueryHitType::eBLOCK;
 }
+
+void Player::draw(MatrixStack &M) {
+    M.pushMatrix();
+    M.translate(px2glm(mController->getPosition()) + glm::vec3(0, height / 2, 0));
+    M.rotate(camera.yaw + M_PI, vec3(0, -1, 0));
+    M.rotate(camera.pitch, vec3(-1, 0, 0));
+    M.scale(0.01);
+    if (!app.renderingCubemap) {
+        app.materialManager.bind("player");
+    }
+    glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
+    app.modelManager.draw("connor");
+    M.popMatrix();
+}

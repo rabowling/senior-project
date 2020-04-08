@@ -62,6 +62,7 @@ public:
     float far = 100.0f;
     float lightSpeed = 5.0f;
     bool renderingCubemap = false;
+    bool renderingFP = false;
 
     void run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
 private:

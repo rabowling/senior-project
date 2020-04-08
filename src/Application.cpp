@@ -107,7 +107,9 @@ void Application::render(float dt) {
     MatrixStack M;
 
     // Render entire scene
+    renderingFP = true;
     drawScene(P, V, player.camera);
+    renderingFP = false;
 
     // Draw geometry of portals to stencil buffer
     shaderManager.bind("portal");
@@ -235,6 +237,9 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
     }
     for (Button &button : buttons) {
         button.draw(M);
+    }
+    if (!renderingFP) {
+        player.draw(M);
     }
 
     if (!renderingCubemap) {

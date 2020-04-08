@@ -41,6 +41,14 @@ void MaterialManager::loadMaterials() {
         /* amb */   vec3(0.0215, 0.01745, 0.0215),
         /* shine */ 76.2
     );
+
+    materials["player"] = Material(
+        "connor",
+        /* spec */  vec3(0.1, 0.1, 0.1),
+        /* dif */   vec3(1, 1, 1),
+        /* amb */   vec3(0.01, 0.01, 0.01),
+        /* shine */ 128
+    );
 }
 
 void MaterialManager::bind(std::string materialName) {
