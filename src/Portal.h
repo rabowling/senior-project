@@ -22,6 +22,9 @@ public:
     void drawOutline(MatrixStack &M);
     glm::mat4 modifyProjectionMatrix(const glm::mat4 &P, const glm::mat4 &V);
     bool facing(const glm::vec3 &point);
+    bool pointInBounds(const glm::vec3 &point);
+
+    glm::vec4 bounds[5];
 
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
@@ -36,6 +39,7 @@ public:
 
     Camera camera;
     Portal *linkedPortal = nullptr;
+    physx::PxActor *surface = nullptr;
     glm::vec3 localForward = glm::vec3(0, 1, 0);
     glm::vec3 localUp = glm::vec3(0, 0, -1);
     glm::vec3 cachedForward;

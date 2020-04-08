@@ -7,6 +7,8 @@
 #include <memory>
 #include <iostream>
 #include "Application.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
 
 using namespace std;
 using namespace glm;
@@ -14,7 +16,7 @@ using namespace glm;
 void Camera::update(glm::vec3 pos, float deltaYaw, float deltaPitch)
 {
     yaw -= deltaYaw;
-    pitch = std::max(std::min(pitch + deltaPitch, radians(80.0)), -radians(80.0));
+    pitch = std::max(std::min(pitch + deltaPitch, radians(89.0)), -radians(89.0));
     
     eye.x = pos.x;
     eye.y = pos.y;
@@ -33,8 +35,8 @@ void Camera::init(glm::vec3 pos, glm::vec3 lookDir, glm::vec3 upVec)
 {
     eye = pos;
     lookAtPoint = pos + lookDir;
-    pitch = asin(-lookDir.y);
-    yaw = atan2(lookDir.x, lookDir.z);
+    pitch = asin(lookDir.y);
+    yaw = atan2(lookDir.x, -lookDir.z);
     this->upVec = upVec;
 }
 
