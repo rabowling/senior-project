@@ -43,11 +43,11 @@ void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
 
     // right plane
     vec3 right = cross(up, forward);
-    planePos = position + right * 1.f;
+    planePos = position + right * 2.f;
     bounds[3] = vec4(-right, -dot(planePos, -right));
 
     // left plane
-    planePos = position - right * 1.f;
+    planePos = position - right * 2.f;
     bounds[4] = vec4(right, -dot(planePos, right));
 }
 
@@ -107,6 +107,16 @@ bool Portal::facing(const glm::vec3 &point) {
 bool Portal::pointInBounds(const glm::vec3 &point) {
     for (const vec4 &plane : bounds) {
         if (dot(vec3(plane), point) + plane.w < 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Portal::pointInSideBounds(const glm::vec3 &point) {
+    for (int i = 1; i < 5; i++) {
+        if (dot(vec3(bounds[i]), point) + bounds[i].w < 0) {
             return false;
         }
     }

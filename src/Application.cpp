@@ -41,12 +41,10 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
 
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
+    float dt = 1.0f / 60.0f;
     while (!glfwWindowShouldClose(windowManager.getHandle())) {
-        controls.update();
-        player.update(1.0f / 60.0f);
-        physics.getScene()->simulate(1.0f / 60.0f);
-        physics.getScene()->fetchResults(true);
-        render(1.0f / 60.0f);
+        update(dt);
+        render(dt);
         glfwSwapBuffers(windowManager.getHandle());
         glfwPollEvents();
 
@@ -62,6 +60,16 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     }
 
     windowManager.shutdown();
+}
+
+void Application::update(float dt) {
+    controls.update();
+    player.update(dt);
+    for (Box &box : app.boxes) {
+        box.update(dt);
+    }
+    physics.getScene()->simulate(dt);
+    physics.getScene()->fetchResults(true);
 }
 
 void Application::render(float dt) {

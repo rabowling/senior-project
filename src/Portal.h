@@ -23,6 +23,7 @@ public:
     glm::mat4 modifyProjectionMatrix(const glm::mat4 &P, const glm::mat4 &V);
     bool facing(const glm::vec3 &point);
     bool pointInBounds(const glm::vec3 &point);
+    bool pointInSideBounds(const glm::vec3 &point);
 
     glm::vec4 bounds[5];
 
