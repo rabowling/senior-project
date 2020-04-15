@@ -87,3 +87,11 @@ GLint ShaderManager::getUniform(const std::string &name) const
 {
 	return active->getUniform(name);
 }
+
+GLuint ShaderManager::getPid(std::string name)
+{
+    if (shaders.find(name) != shaders.end()) {
+        Program *found = &shaders[name];
+        return found->pid;
+    }
+}

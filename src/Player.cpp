@@ -165,6 +165,14 @@ void Player::update(float dt) {
             quat newRot = quatLookAt(px2glm(hit.block.normal), portalUp)
                 * angleAxis((float) M_PI_2, cross(portal->localForward, portal->localUp));
             portal->setPosition(newPos, newRot);
+
+            PortalLight &curLight = (app.controls.isPressed(Controls::PRIMARY_FIRE)) ? app.portalLights[ORANGE_PORTAL] : app.portalLights[BLUE_PORTAL];
+            curLight.direction = portal->getForward();
+            curLight.position = newPos;
+            curLight.portal = portal;
+
+            //cout << curLight.direction.x << ", " << curLight.direction.y << ", " << curLight.direction.z << endl;
+            //cout << curLight.position.x << ", " << curLight.position.y << ", " << curLight.position.z << endl;
         }
     }
 }

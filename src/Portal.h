@@ -46,4 +46,6 @@ public:
     glm::vec3 position;
     glm::quat orientation;
     glm::vec3 scale = glm::vec3(1);
+
+    float intensity;
 };

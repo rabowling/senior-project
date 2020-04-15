@@ -72,6 +72,9 @@ void Controls::update() {
         if (glfwGetKey(handle, GLFW_KEY_Z) == GLFW_PRESS) {
             handleEvent(LIGHT_DOWN);
         }
+        if (glfwGetKey(handle, GLFW_KEY_P) == GLFW_PRESS) {
+            handleEvent(DEBUG_LIGHT);
+        }
 
         for (InputEvent e : prevHeld) {
             if (held.find(e) == held.end()) {
