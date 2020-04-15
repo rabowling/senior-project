@@ -14,7 +14,18 @@
 using namespace glm;
 using namespace std;
 
-glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<KDNode> &kdtree) {
+#define NUM_BOUNCES 1
+#define NUM_BOUNCE_RAYS 8
+
+glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
+    vec3 dir = normalize(vec3(rand(), rand(), rand()));
+    if (dot(dir, normal) < 0) {
+        dir = -dir;
+    }
+    return dir;
+}
+
+glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<KDNode> &kdtree, int bounceDepth) {
     RayHit hit;
     if (!kdtree->intersect(orig, dir, hit)) {
         return vec3(0, 0, 0);
@@ -37,6 +48,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
     }
 
     vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
+    vec3 hitNorm = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
 
     Material *material = hit.obj->getMaterial();
     if (material) {
@@ -100,7 +112,6 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
         }
 
         vec3 color(0);
-        vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
         for (const Light &light : app.lights) {
             // Blinn-Phong shading
             vec3 ambient = material->amb * texColor * light.intensity;
@@ -111,9 +122,9 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
             if (!kdtree->intersect(hitPos, normalize(light.position - hitPos), shadowRayHit)
                     || shadowRayHit.d > distance(light.position, hitPos)) {
                 vec3 lightDir = normalize(light.position - hitPos);
-                vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
+                vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
                 vec3 H = normalize((lightDir - dir) / 2.f);
-                vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
+                vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
                 color += diffuse + specular;
             }
 
@@ -156,14 +167,23 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
                     float d = distance(light.position, shadowOrig);
                     if (!kdtree->checkBlocked(shadowOrig, shadowDir, d)) {
                         vec3 lightDir = normalize(newLightPos - hitPos);
-                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
+                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
                         vec3 H = normalize((lightDir - dir) / 2.f);
-                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
+                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
                         color = color + diffuse + specular;
                     }
                 }
             }
 
+        }
+
+        if (bounceDepth < NUM_BOUNCES) {
+            vec3 indirectLight(0);
+            for (int i = 0; i < NUM_BOUNCE_RAYS; i++) {
+                vec3 dir = randomDirInSphere(hitNorm);
+                indirectLight += traceColor(hitPos, dir, kdtree, bounceDepth + 1);
+            }
+            color += indirectLight / (float) NUM_BOUNCE_RAYS;
         }
 
         return color;
@@ -181,7 +201,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
         vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
         vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
         vec3 newDir = normalize(newOrig - newEye);
-        return traceColor(newOrig, newDir, kdtree);
+        return traceColor(newOrig, newDir, kdtree, bounceDepth);
     }
     else if (dynamic_cast<PortalOutline *>(hit.obj)) {
         return static_cast<PortalOutline *>(hit.obj)->color * 255.f;
@@ -209,7 +229,7 @@ void renderRT(int width, int height, const std::string &filename) {
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
-            vec3 pixel = traceColor(orig, dir, kdtree);
+            vec3 pixel = traceColor(orig, dir, kdtree, 0);
             for (int i = 0; i < 3; i++) {
                 pixels[(y*width+x)*3+i] = (unsigned char) (std::max(0, std::min(255, (int) round(pixel[i]))));
             }
