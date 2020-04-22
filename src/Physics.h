@@ -4,7 +4,7 @@
 
 #define GRAVITY -9.81
 
-class Physics : public physx::PxSimulationEventCallback
+class Physics : public physx::PxSimulationEventCallback, physx::PxContactModifyCallback
 {
 public:
     void init();
@@ -18,6 +18,8 @@ public:
     virtual void onWake(physx::PxActor** , physx::PxU32 ) {}
     virtual void onSleep(physx::PxActor** , physx::PxU32 ){}
     virtual void onAdvance(const physx::PxRigidBody*const*, const physx::PxTransform*, const physx::PxU32) {}
+
+    virtual void onContactModify(physx::PxContactModifyPair *const pairs, physx::PxU32 count);
 
     physx::PxMaterial *defaultMaterial;
 private:

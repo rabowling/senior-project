@@ -92,6 +92,7 @@ public:
 
     void run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
 private:
+    void update(float dt);
     void render(float dt);
     void drawScene(const glm::mat4 &P, const glm::mat4 &V, const Camera &camera);
     void loadLevel(std::string levelFile);

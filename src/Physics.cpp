@@ -3,6 +3,8 @@
 #include "Application.h"
 #include "Button.h"
 #include "GameObject.h"
+#include "Utils.h"
+#include <glm/glm.hpp>
 
 using namespace physx;
 
@@ -17,6 +19,7 @@ PxFilterFlags myFilterShader(
 {
     pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
     pairFlags |= PxPairFlag::eCONTACT_DEFAULT;
+    pairFlags |= PxPairFlag::eMODIFY_CONTACTS;
 	return PxFilterFlag::eDEFAULT;
 }
 
@@ -28,6 +31,20 @@ void Physics::onContact(const PxContactPairHeader& pairHeader, const PxContactPa
         GameObject *obj = static_cast<GameObject *>(actor1->userData);
         if (dynamic_cast<Button *>(obj)) {
             static_cast<Button *>(obj)->onContact(actor2);
+        }
+    }
+}
+
+void Physics::onContactModify(physx::PxContactModifyPair *const pairs, physx::PxU32 count) {
+    for (int i = 0; i < count; i++) {
+        for (int j = 0; j < 2; j++) {
+            const PxRigidActor *actor1 = pairs[i].actor[i];
+            const PxRigidActor *actor2 = pairs[i].actor[(i+1)%2];
+            
+            if (actor1->userData != NULL) {
+                GameObject *obj = static_cast<GameObject *>(pairs[i].actor[0]->userData);
+                obj->onContactModify(actor2, pairs[i].contacts);
+            }
         }
     }
 }
@@ -56,6 +73,7 @@ void Physics::init() {
     sceneDesc.cpuDispatcher = mDispatcher;
     sceneDesc.filterShader = myFilterShader;
     sceneDesc.simulationEventCallback = this;
+    sceneDesc.contactModifyCallback = this;
     mScene = mPhysics->createScene(sceneDesc);
     if (!mScene) {
         std::cout << "createScene failed" << std::endl;

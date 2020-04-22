@@ -2,8 +2,10 @@
 #include "Application.h"
 #include "Utils.h"
 #include <glm/glm.hpp>
+#include <iostream>
 
 using namespace physx;
+using namespace glm;
 
 void Box::init(physx::PxVec3 location, physx::PxVec3 scale, physx::PxQuat rotation) {
     PxShape *shape = app.physics.getPhysics()->createShape(PxBoxGeometry(scale), *app.physics.defaultMaterial);
@@ -42,4 +44,52 @@ glm::mat4 Box::getTransform() const {
 
 Material *Box::getMaterial() const {
     return app.materialManager.get("marble");
+}
+
+void Box::update(float dt) {
+    prevTouchingPortals = touchingPortals;
+    touchingPortals.clear();
+    for (Portal &portal : app.portals) {
+        if (portal.pointInBounds(px2glm(body->getGlobalPose().p))) {
+            touchingPortals.push_back(&portal);
+        }
+    }
+
+    for (Portal *portal : prevTouchingPortals) {
+        if (!portal->facing(px2glm(body->getGlobalPose().p))) {
+            MatrixStack camTransform;
+            camTransform.translate(portal->linkedPortal->position);
+            camTransform.rotate(M_PI, portal->linkedPortal->getUp());
+            camTransform.rotate(portal->linkedPortal->orientation);
+            camTransform.rotate(inverse(portal->orientation));
+            camTransform.translate(-portal->position);
+
+            vec3 newPos = vec3(camTransform.topMatrix() * vec4(px2glm(body->getGlobalPose().p), 1));
+            body->setGlobalPose(PxTransform(glm2px(newPos), body->getGlobalPose().q));
+
+            vec3 newVel = vec3(camTransform.topMatrix() * vec4(px2glm(body->getLinearVelocity()), 0));
+            body->setLinearVelocity(glm2px(newVel));
+
+            prevTouchingPortals = touchingPortals;
+            touchingPortals.clear();
+            for (Portal &portal : app.portals) {
+                if (portal.pointInBounds(px2glm(body->getGlobalPose().p))) {
+                    touchingPortals.push_back(&portal);
+                }
+            }
+            break;
+        }
+    }
+}
+
+void Box::onContactModify(const physx::PxRigidActor *actor, physx::PxContactSet &contacts) {
+    for (int i = 0; i < contacts.size(); i++) {
+        vec3 contactPoint = px2glm(contacts.getPoint(i));
+        for (Portal *portal : touchingPortals) {
+            if (portal->pointInSideBounds(contactPoint) && (actor == portal->surface || !portal->facing(contactPoint))) {
+                contacts.ignore(i);
+                break;
+            }
+        }
+    }
 }

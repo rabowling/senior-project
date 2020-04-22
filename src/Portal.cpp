@@ -2,7 +2,7 @@
 #include "Application.h"
 #include "Utils.h"
 #include "PortalOutline.h"
-
+#include <iostream>
 #include <glm/gtc/quaternion.hpp>
 
 using namespace glm;
@@ -26,6 +26,29 @@ void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
     camera.init(position, lookDir, getUp());
     isForwardCached = false;
     isUpCached = false;
+
+    // portal plane
+    vec3 forward = getForward();
+    vec3 planePos = position;
+    bounds[0] = vec4(forward, -dot(planePos, forward));
+
+    // up plane
+    vec3 up = getUp();
+    planePos = position + up * 2.f;
+    bounds[1] = vec4(-up, -dot(planePos, -up));
+
+    // down plane
+    planePos = position - up * 2.f;
+    bounds[2] = vec4(up, -dot(planePos, up));
+
+    // right plane
+    vec3 right = cross(up, forward);
+    planePos = position + right * 2.f;
+    bounds[3] = vec4(-right, -dot(planePos, -right));
+
+    // left plane
+    planePos = position - right * 2.f;
+    bounds[4] = vec4(right, -dot(planePos, right));
 }
 
 void Portal::draw(MatrixStack &M) {
@@ -79,6 +102,26 @@ bool Portal::facing(const glm::vec3 &point) {
     vec3 normal = getForward();
     float D = -dot(normal, position);
     return dot(normal, point) + D > 0;
+}
+
+bool Portal::pointInBounds(const glm::vec3 &point) {
+    for (const vec4 &plane : bounds) {
+        if (dot(vec3(plane), point) + plane.w < 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Portal::pointInSideBounds(const glm::vec3 &point) {
+    for (int i = 1; i < 5; i++) {
+        if (dot(vec3(bounds[i]), point) + bounds[i].w < 0) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // https://aras-p.info/texts/obliqueortho.html

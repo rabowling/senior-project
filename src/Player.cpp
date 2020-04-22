@@ -28,6 +28,15 @@ void Player::onShapeHit(const PxControllerShapeHit &hit) {
         actor->addForce(deltaLinearVelocity * 1000, PxForceMode::eVELOCITY_CHANGE);
         actor->addTorque(deltaAngularVelocity * 10, PxForceMode::eVELOCITY_CHANGE);
     }
+    for (int i = 0; i < 3; i++) {
+        if (velocity[i] > 0 && hit.worldNormal[i] < 0) {
+            velocity[i] *= 1 + hit.worldNormal[i];
+        }
+        else if (velocity[i] < 0 && hit.worldNormal[i] > 0) {
+            velocity[i] *= 1 - hit.worldNormal[i];
+        }
+
+    }
 }
 
 void Player::setPosition(float x, float y, float z) {
@@ -46,7 +55,10 @@ void Player::init() {
 
     mController = app.physics.getControllerManager()->createController(desc);
     velocity = PxVec3(0);
-    camera.init(px2glm(desc.position), glm::vec3(0, 0, 1), glm::vec3(0, 1, 0));
+    camera.init(px2glm(desc.position), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
+
+    raycastFilterCallback = make_unique<RaycastFilterCallback>(this);
+    moveFilterCallback = make_unique<MoveFilterCallback>(this);
 
     // Create and link player-controlled portals
     app.portals.push_back(Portal(vec3(0), vec3(1), quat(1, 0, 0, 0), "portal"));
@@ -61,8 +73,7 @@ void Player::init() {
 }
 
 void Player::update(float dt) {
-    camera.update(px2glm(mController->getPosition()) + glm::vec3(0, height / 2, 0),
-        app.controls.getMouseDeltaX(), app.controls.getMouseDeltaY());
+    camera.update(px2glm(mController->getPosition()) + camOffset, app.controls.getMouseDeltaX(), app.controls.getMouseDeltaY());
 
     PxVec3 direction = glm2px(camera.lookAtPoint - camera.eye);
     direction.y = 0.0f;
@@ -98,7 +109,7 @@ void Player::update(float dt) {
     mController->getState(state);
     if (state.collisionFlags & PxControllerCollisionFlag::eCOLLISION_DOWN) {
         velocity *= 0.9f;
-        if (app.controls.isPressed(Controls::JUMP)) {
+        if (app.controls.isHeld(Controls::JUMP)) {
             velocity.y = jumpSpeed;
         }
     }
@@ -106,7 +117,53 @@ void Player::update(float dt) {
         velocity.y += GRAVITY * dt;
     }
     displacement += velocity * dt;
-    mController->move(displacement, 0.01f, dt, NULL, NULL);
+
+    // filter out objects when moving through portal
+    PxControllerFilters moveFilter;
+    moveFilter.mFilterCallback = moveFilterCallback.get();
+    moveFilter.mFilterFlags = PxQueryFlags(PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER);
+
+    mController->move(displacement, 0.01f, dt, moveFilter, NULL);
+    
+    // keep track of portals that player is touching
+    prevTouchingPortals = touchingPortals;
+    touchingPortals.clear();
+    for (Portal &portal : app.portals) {
+        if (portal.pointInBounds(px2glm(mController->getPosition()))) {
+            touchingPortals.push_back(&portal);
+        }
+    }
+
+    // teleport player if they move through the portal
+    for (Portal *portal : prevTouchingPortals) {
+        if (!portal->facing(px2glm(mController->getPosition()))) {
+
+            MatrixStack camTransform;
+            camTransform.translate(portal->linkedPortal->position);
+            camTransform.rotate(M_PI, portal->linkedPortal->getUp());
+            camTransform.rotate(portal->linkedPortal->orientation);
+            camTransform.rotate(inverse(portal->orientation));
+            camTransform.translate(-portal->position);
+
+            vec3 newPos = vec3(camTransform.topMatrix() * vec4(px2glm(mController->getPosition()), 1));
+            mController->setPosition(glm2pxex(newPos));
+
+            vec3 newDir = vec3(camTransform.topMatrix() * vec4(camera.lookAtPoint - camera.eye, 0));
+            camera.init(newPos + camOffset, newDir, camera.upVec);
+
+            vec3 newVel = vec3(camTransform.topMatrix() * vec4(px2glm(velocity), 0));
+            velocity = glm2px(newVel);
+
+            prevTouchingPortals = touchingPortals;
+            touchingPortals.clear();
+            for (Portal &portal : app.portals) {
+                if (portal.pointInBounds(px2glm(mController->getPosition()))) {
+                    touchingPortals.push_back(&portal);
+                }
+            }
+            break;
+        }
+    }
 
     // Check for picking up item
     if (app.controls.isPressed(Controls::USE)) {
@@ -122,7 +179,7 @@ void Player::update(float dt) {
             PxReal maxDist = 50.0;
             raycastMode = PICK_UP;
             bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
-                PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), this);
+                PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), raycastFilterCallback.get());
             if (success) {
                 if (hit.block.actor->is<PxRigidBody>()) {
                     heldItem = static_cast<PxRigidBody *>(hit.block.actor);
@@ -156,7 +213,7 @@ void Player::update(float dt) {
         PxReal maxDist = 100.0;
         raycastMode = FIRE_PORTAL;
         bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
-            PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER)), this);
+            PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::eSTATIC | PxQueryFlag::ePREFILTER)), raycastFilterCallback.get());
         if (success) {
             Portal *portal = app.controls.isPressed(Controls::PRIMARY_FIRE) ? portals[0] : portals[1];
             vec3 newPos = px2glm(hit.block.position);
@@ -173,24 +230,46 @@ void Player::update(float dt) {
 
             //cout << curLight.direction.x << ", " << curLight.direction.y << ", " << curLight.direction.z << endl;
             //cout << curLight.position.x << ", " << curLight.position.y << ", " << curLight.position.z << endl;
+
+            portal->surface = hit.block.actor;
         }
     }
 }
 
-// Filter raycast
-PxQueryHitType::Enum Player::preFilter(const PxFilterData &filterData, const PxShape *shape, const PxRigidActor *actor, PxHitFlags &queryFlags)
+Player::RaycastFilterCallback::RaycastFilterCallback(Player *parent) : parent(parent) {
+
+}
+
+
+PxQueryHitType::Enum Player::RaycastFilterCallback::preFilter(const PxFilterData &filterData, const PxShape *shape, const PxRigidActor *actor, PxHitFlags &queryFlags)
 {
-    if (raycastMode == PICK_UP) {
-        if (mController->getActor() == actor) {
+    if (parent->raycastMode == PICK_UP) {
+        if (parent->mController->getActor() == actor) {
             return PxQueryHitType::eNONE;
         }
     }
-    else if (raycastMode == FIRE_PORTAL) {
-        if (mController->getActor() == actor) {
+    else if (parent->raycastMode == FIRE_PORTAL) {
+        if (parent->mController->getActor() == actor) {
             return PxQueryHitType::eNONE;
         }
     }
     
+    return PxQueryHitType::eBLOCK;
+}
+
+Player::MoveFilterCallback::MoveFilterCallback(Player *parent) : parent(parent) {
+
+}
+
+PxQueryHitType::Enum Player::MoveFilterCallback::preFilter(const PxFilterData &filterData, const PxShape *shape, const PxRigidActor *actor, PxHitFlags &queryFlags)
+{
+    PxBounds3 bbox = PxShapeExt::getWorldBounds(*shape, *actor, 1);
+    for (Portal &portal : app.portals) {
+        if (portal.pointInBounds(px2glm(parent->mController->getPosition()))
+                && (portal.surface == actor || (!portal.facing(px2glm(bbox.maximum)) && !portal.facing(px2glm(bbox.minimum))))) {
+            return PxQueryHitType::eNONE;
+        }
+    }
     return PxQueryHitType::eBLOCK;
 }
 
