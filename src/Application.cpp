@@ -26,6 +26,10 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     physics.init();
     player.init();
     controls.init(inputMode, recordFilename);
+    int width, height;
+    glfwGetFramebufferSize(windowManager.getHandle(), &width, &height);
+    float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
+    LP = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
     for (int i = 0; i < NUM_PORTALS; i++) {
         portalLights[i].direction = vec3(0,0,0);
@@ -85,6 +89,10 @@ void Application::updatePortalLights() {
         if (success) {
             newIntensity = 0.0f;
         } else {
+            // float dist = hit.block.distance;
+            // if (i == 0) cout << dist << endl;
+            // float distCalc = 1 - ((dist - MIN_LIGHT_DIST) / MAX_LIGHT_DIST);
+            // newIntensity = glm::clamp(distCalc, 0.0f, 1.0f);
             newIntensity = 1.0f;
         }
         if (portalLights[i].portal != NULL) {
@@ -223,7 +231,6 @@ void Application::renderToDepthmap(const mat4 &P, const mat4 &V, const Camera &c
             CHECKED_GL_CALL(glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT));
         }
 
-        mat4 LP = ortho(-10.0, 10.0, -10.0, 10.0, 0.1, 50.0);
         mat4 LV;
         
         if (!debug) {
@@ -293,6 +300,8 @@ void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &ca
 void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) {
     MatrixStack M;
 
+    mat4 LV;
+
     if (!renderingCubemap) {
         shaderManager.bind("tex");
         glUniform3fv(shaderManager.getUniform("pointLightPos"), 1, value_ptr(lightPos));
@@ -306,6 +315,10 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
             } else {
                 glUniform1f(shaderManager.getUniform("portalLights[" + to_string(i) + "].intensity"), 0.0f);
             }
+            LV = lookAt(portalLights[i].position, 
+                         portalLights[i].position + normalize(portalLights[i].direction),
+                         vec3(0, 1, 0));
+            glUniformMatrix4fv(shaderManager.getUniform("LS[" + to_string(i) + "]"), 1, GL_FALSE, value_ptr(LP*LV));
         }
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
@@ -365,6 +378,10 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
             } else {
                 glUniform1f(shaderManager.getUniform("portalLights[" + to_string(i) + "].intensity"), 0.0f);
             }
+            LV = lookAt(portalLights[i].position, 
+                         portalLights[i].position + normalize(portalLights[i].direction),
+                         vec3(0, 1, 0));
+            glUniformMatrix4fv(shaderManager.getUniform("LS[" + to_string(i) + "]"), 1, GL_FALSE, value_ptr(LP*LV));
         }
 	    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
         glUniform1f(shaderManager.getUniform("farPlane"), far);

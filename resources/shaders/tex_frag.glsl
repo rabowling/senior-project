@@ -32,31 +32,27 @@ uniform sampler2D depthMapPortal4;
 in vec2 vTexCoord;
 in vec3 fragNor;
 in vec3 fragPos;
+in vec4 LSPos[4];
 
-float PortalShadowCalculation(vec3 pos, int index) {
-    vec3 lightDir = normalize(pos - fragPos);
-    float bias = max(0.05 * (1.0 - dot(fragNor, lightDir)), 0.005);  
-	vec3 shifted = (pos.xyz + vec3(1)) * 0.5;
-	float shadow = 0.0;
-	for (int x = -1; x <= 1; ++x) {
-		for (int y = -1; y <= 1; ++y) {
-            float pcfDepth = 0.0f;
-            if (index == 0) {
-                pcfDepth = texture(depthMapPortal1, shifted.xy + vec2(x, y)).r;
-            } else if (index == 1) {
-                pcfDepth = texture(depthMapPortal2, shifted.xy + vec2(x, y)).r;
-            } else if (index == 2) {
-                pcfDepth = texture(depthMapPortal3, shifted.xy + vec2(x, y)).r;
-            } else {
-                pcfDepth = texture(depthMapPortal4, shifted.xy + vec2(x, y)).r;                
-            }
-			shadow += shifted.z - bias > pcfDepth ? 1.0 : 0.0;
-		}
-	}
-	if (shifted.z > 1.0) {
-		shadow = 0.0;
-	}
-	return shadow / 9.0;
+float PortalShadowCalculation(vec4 pos, vec3 lightDir, int index) {
+    vec3 projCoords = pos.xyz / pos.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float bias = 0;
+    float closestDepth = 0.0;
+    if (index == 0) {
+        closestDepth = texture(depthMapPortal1, projCoords.xy).r;
+    } else if (index == 1) {
+        closestDepth = texture(depthMapPortal2, projCoords.xy).r;
+    } else if (index == 2) {
+        closestDepth = texture(depthMapPortal3, projCoords.xy).r;
+    } else {
+        closestDepth = texture(depthMapPortal4, projCoords.xy).r;
+    }
+    float currentDepth = projCoords.z;
+    if (currentDepth > 1.0) {
+        return 0.0;
+    }
+    return currentDepth - bias > closestDepth ? 1.0 : 0.0;
 }
 
 float ShadowCalculation(vec3 pos, vec3 lightPos, int index)
@@ -94,7 +90,7 @@ vec3 LightingCalculation(vec3 lightPos, float intensity, int index) {
     if (index < 0) {
 	    shadow = ShadowCalculation(fragPos, lightPos, index);
     } else {
-        shadow = PortalShadowCalculation(lightPos, index);
+        shadow = PortalShadowCalculation(LSPos[index], dirLightDirNorm, index);
     }
 
     return ambient + (1.0 - shadow) * (diffuse + specular);

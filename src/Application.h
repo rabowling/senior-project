@@ -34,6 +34,8 @@ const unsigned int SHADOW_HEIGHT = 1024;
 
 #define INNER_CUTOFF glm::cos(glm::radians(30.0f))
 #define OUTER_CUTOFF glm::cos(glm::radians(45.0f))
+#define MIN_LIGHT_DIST 5
+#define MAX_LIGHT_DIST 30
 
 struct Light {
     glm::vec3 position;
@@ -79,6 +81,8 @@ public:
     std::vector<Light> lights;
     glm::vec3 lightPos;
     PortalLight portalLights[NUM_PORTALS];
+    //glm::mat4 LP = glm::ortho(-100.0, 100.0, -100.0, 100.0, 0.1, 100.0);
+    glm::mat4 LP;
 
     float near = 1.0f;
     float far = 100.0f;
