@@ -13,6 +13,7 @@ public:
     void unbind();
     GLint getAttribute(const std::string &name) const;
 	GLint getUniform(const std::string &name) const;
+    GLuint getPid(std::string name);
     Program *getActive();
 
 private:
