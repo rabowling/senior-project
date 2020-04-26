@@ -2,6 +2,7 @@
 #include "Portal.h"
 #include "PortalOutline.h"
 #include <glm/glm.hpp>
+#include <iostream>
 
 using namespace glm;
 using namespace std;
@@ -31,10 +32,67 @@ BBox::BBox() : bbMin(0), bbMax(0)
 
 }
 
+bool KDNode::intersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &hit) {
+    float tmin, tmax;
+    if (bbox.intersect(orig, dir, tmin, tmax)) {
+        return recIntersect(orig, dir, hit, tmin, tmax);
+    }
+    return false;
+}
+
+bool KDNode::recIntersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &hit, float tmin, float tmax) {
+    if (leaf) {
+        bool didHit = false;
+        for (Triangle &tri: tris) {
+            RayHit tmpHit;
+            if (tri.intersect(orig, dir, tmpHit)) {
+                tmpHit.obj = tri.obj;
+                tmpHit.faceIndex = tri.faceIndex;
+                if (didHit) {
+                    if (tmpHit < hit) {
+                        hit = tmpHit;
+                    }
+                }
+                else {
+                    didHit = true;
+                    hit = tmpHit;
+                }
+            }
+        }
+        return didHit;
+    }
+    else {
+        //float t_split = distanceAlongRayToPlane(ray);
+        float tsplit = (plane.pos - orig[plane.axis]) * (dir[plane.axis] == 0 ? INFINITY : 1.f / dir[plane.axis]);
+
+        // near is the side containing the origin of the ray
+        KDNode *near, *far;
+        if (orig[plane.axis] < plane.pos) {
+            near = left.get();
+            far = right.get();
+        } else {
+            near = right.get();
+            far = left.get();
+        }
+
+        if (tsplit > tmax || tsplit < 0) {
+            return near->recIntersect(orig, dir, hit, tmin, tmax);
+        }
+        else if (tsplit < tmin) {
+            return far->recIntersect(orig, dir, hit, tmin, tmax);
+        }
+        else {
+            if (near->recIntersect(orig, dir, hit, tmin, tsplit) && hit.d < tsplit)
+                return true;
+            return far->recIntersect(orig, dir, hit, tsplit, tmax);
+        }
+    }
+}
+
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
-bool BBox::intersect(const glm::vec3 &orig, const glm::vec3 &dir, float d) {
-    float tmin = (bbMin.x - orig.x) / dir.x;
-    float tmax = (bbMax.x - orig.x) / dir.x;
+bool BBox::intersect(const glm::vec3 &orig, const glm::vec3 &dir, float &tmin, float &tmax, float d) {
+    tmin = (bbMin.x - orig.x) / dir.x;
+    tmax = (bbMax.x - orig.x) / dir.x;
 
     if (tmin > tmax) swap(tmin, tmax);
 
@@ -73,6 +131,18 @@ bool BBox::intersect(const glm::vec3 &orig, const glm::vec3 &dir, float d) {
     return true;
 }
 
+BBox Triangle::getBounds() const {
+    BBox box;
+    box.bbMin = box.bbMax = verts[0];
+    for (const vec3 &vert : verts) {
+        for (int i = 0; i < 3; i++) {
+            box.bbMin[i] = std::min(box.bbMin[i], vert[i]);
+            box.bbMax[i] = std::max(box.bbMax[i], vert[i]);
+        }
+    }
+}
+
+
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
 bool Triangle::intersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &hit) const {
     vec3 edge1 = verts[1] - verts[0];
@@ -105,6 +175,7 @@ bool Triangle::intersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &hi
     return hit.d > -EPSILON;
 }
 
+// build list of triangles, then make recursive call to build tree
 std::unique_ptr<KDNode> KDNode::build(const std::list<GameObject *> &gameObjects) {
     vector<Triangle> tris;
 
@@ -138,143 +209,208 @@ std::unique_ptr<KDNode> KDNode::build(const std::list<GameObject *> &gameObjects
         }
     }
 
-    return build(tris, 0);
+    BBox box;
+    box.bbMin = box.bbMax = tris[0].verts[0];
+    for (const Triangle &tri : tris) {
+        for (const vec3 &vert : tri.verts) {
+            for (int i = 0; i < 3; i++) {
+                box.bbMin[i] = std::min(box.bbMin[i], vert[i]);
+                box.bbMax[i] = std::max(box.bbMax[i], vert[i]);
+            }
+        }
+    }
+
+    SplitPlane dummyPlane;
+    dummyPlane.axis = -1;
+
+    return recBuild(tris, box, 0, dummyPlane);
 }
 
-// https://blog.frogslayer.com/kd-trees-for-faster-ray-tracing-with-triangles/
-std::unique_ptr<KDNode> KDNode::build(const std::vector<Triangle> &tris, int depth) {
-    unique_ptr<KDNode> node = make_unique<KDNode>();
-    node->tris = tris;
-    
-    if (tris.size() == 0) {
-        return node;
+std::unique_ptr<KDNode> KDNode::recBuild(const std::vector<Triangle> &tris, const BBox &V, int depth, const SplitPlane &prevPlane) {
+    SplitPlane p;
+    float Cp;
+    PlaneSide pside;
+    findPlane(tris, V, depth, p, Cp, pside);
+
+    if (isDone(tris.size(), Cp) || p == prevPlane) {
+        // Leaf node
+        unique_ptr<KDNode> leafnode = make_unique<KDNode>();
+        leafnode->tris = tris;
+        leafnode->bbox = V;
+        leafnode->leaf = true;
+        return leafnode;
     }
 
-    node->bbox.bbMin = glm::min(tris[0].verts[0], glm::min(tris[0].verts[1], tris[0].verts[2]));
-    node->bbox.bbMax = glm::max(tris[0].verts[0], glm::max(tris[0].verts[1], tris[0].verts[2]));
-
-    if (tris.size() == 1) {
-        node->left = make_unique<KDNode>();
-        node->right = make_unique<KDNode>();
-        return node;
-    }
-
-    for (int i = 1; i < tris.size(); i++) {
-        node->bbox.bbMin = glm::min(glm::min(node->bbox.bbMin, tris[i].verts[0]), glm::min(tris[i].verts[1], tris[i].verts[2]));
-        node->bbox.bbMax = glm::max(glm::max(node->bbox.bbMax, tris[i].verts[0]), glm::max(tris[i].verts[1], tris[i].verts[2]));
-    }
-
-    vec3 midpoint(0);
-    for (const Triangle &tri : tris) {
-        midpoint += tri.verts[0] + tri.verts[1] + tri.verts[2];
-    }
-    midpoint /= 3.0f * tris.size();
-
-    vector<Triangle> leftTris;
-    vector<Triangle> rightTris;
-    vec3 bboxSize = node->bbox.bbMax - node->bbox.bbMin;
-    float longestAxis = std::max({bboxSize.x, bboxSize.y, bboxSize.z});
-    for (const Triangle &tri : tris) {
-        vec3 triMidpoint = (tri.verts[0] + tri.verts[1] + tri.verts[2]) / 3.0f;
-        for (int i = 0; i < 3; i++) {
-            if (longestAxis == bboxSize[i]) {
-                midpoint[i] >= triMidpoint[i] ? rightTris.push_back(tri) : leftTris.push_back(tri);
-                break;
-            }
-        }
-    }
-
-    if (leftTris.size() == 0 && rightTris.size() > 0) {
-        leftTris = rightTris;
-    }
-    else if (rightTris.size() == 0 && leftTris.size() > 0) {
-        rightTris = leftTris;
-    }
-
-    int matches = 0;
-    for (const Triangle &leftTri : leftTris) {
-        for (const Triangle &rightTri : rightTris) {
-            if (leftTri.obj == rightTri.obj && leftTri.faceIndex == rightTri.faceIndex) {
-                matches++;
-            }
-        }
-    }
-
-    if ((float) matches / leftTris.size() < 0.5 && (float) matches / rightTris.size() < 0.5) {
-        node->left = build(leftTris, depth + 1);
-        node->right = build(rightTris, depth + 1);
-    }
-    else {
-        node->left = make_unique<KDNode>();
-        node->right = make_unique<KDNode>();
-    }
-
-    return node;
+    BBox VL, VR;
+    splitBox(V, p, VL, VR);
+    std::vector<Triangle> TL, TR;
+    sortTriangles(tris, p, pside, TL, TR);
+    // Inner node
+    unique_ptr<KDNode> innerNode = make_unique<KDNode>();
+    innerNode->plane = p;
+    innerNode->bbox = V;
+    innerNode->leaf = false;
+    innerNode->left = recBuild(TL, VL, depth+1, p);
+    innerNode->right = recBuild(TR, VR, depth+1, p);
+    return innerNode;
 }
 
-bool KDNode::intersect(const glm::vec3 &orig, const glm::vec3 &dir, RayHit &closestHit) {
-    if (!bbox.intersect(orig, dir)) {
-        return false;
+// get primitives's clipped bounding box
+BBox clipTriangleToBox(const Triangle &t, const BBox &V) {
+    BBox b = t.getBounds();
+    for(int k=0; k<3; k++) {
+        if(V.bbMin[k] > b.bbMin[k])
+            b.bbMin[k] = V.bbMin[k];
+        if(V.bbMax[k] < b.bbMax[k])
+            b.bbMax[k] = V.bbMax[k];
     }
+    return b;
+}
 
-    if (left->tris.size() > 0 || right->tris.size() > 0) {
-        RayHit leftHit, rightHit;
-        bool didHitLeft = left->intersect(orig, dir, leftHit);
-        bool didHitRight = right->intersect(orig, dir, rightHit);
-        if (didHitLeft && didHitRight) {
-            closestHit = rightHit < leftHit ? rightHit : leftHit;
-        }
-        else if (didHitLeft) {
-            closestHit = leftHit;
-        }
-        else if (didHitRight) {
-            closestHit = rightHit;
-        }
-        return didHitLeft || didHitRight;
+
+struct Event {
+    typedef enum { endingOnPlane=0, lyingOnPlane=1, startingOnPlane=2  } EventType;
+    const Triangle *triangle;
+    SplitPlane splitPlane;
+    EventType type;
+
+    Event(const Triangle *tri, int k, float ee0, EventType type) : triangle(tri), type(type), splitPlane(SplitPlane(k, ee0)){}
+
+    inline bool operator<(const Event& e) const {
+        return((splitPlane.pos < e.splitPlane.pos) || (splitPlane.pos == e.splitPlane.pos && type < e.type));
     }
-    else {
-        bool didHit = false;
-        RayHit hit;
-        for (const Triangle &tri : tris) {
-            if (tri.intersect(orig, dir, hit)) {
-                hit.obj = tri.obj;
-                hit.faceIndex = tri.faceIndex;
+};
 
-                if (didHit) {
-                    if (hit < closestHit) {
-                        closestHit = hit;
-                    }
-                }
-                else {
-                    closestHit = hit;
-                    didHit = true;
-                }
+// best spliting plane using SAH heuristic
+void KDNode::findPlane(const std::vector<Triangle> &T, const BBox &V, int depth, SplitPlane &pEst, float &cEst, PlaneSide &psideEst) {
+    // static int count = 0;
+    cEst = INFINITY;
+    for(int k=0; k<3; ++k) {
+        std::vector<Event> events;
+        events.reserve(T.size()*2);
+        for (const Triangle &t : T) {
+            BBox B = clipTriangleToBox(t, V);
+            if(B.isPlanar()) {
+                events.push_back(Event(&t, k, B.bbMin[k], Event::lyingOnPlane));
+            } else {
+                events.push_back(Event(&t, k, B.bbMin[k], Event::startingOnPlane));
+                events.push_back(Event(&t, k, B.bbMax[k], Event::endingOnPlane));
             }
         }
-
-        return didHit;
+        sort(events.begin(), events.end());
+        int NL = 0, NP = 0, NR = T.size();
+        for(std::vector<Event>::size_type Ei = 0; Ei < events.size(); ++Ei) {
+            const SplitPlane& p = events[Ei].splitPlane;
+            int pLyingOnPlane = 0, pStartingOnPlane = 0, pEndingOnPlane = 0;
+            while(Ei < events.size() && events[Ei].splitPlane.pos == p.pos && events[Ei].type == Event::endingOnPlane) {
+                ++pEndingOnPlane;
+                Ei++;
+            }
+            while(Ei < events.size() && events[Ei].splitPlane.pos == p.pos && events[Ei].type == Event::lyingOnPlane) {
+                ++pLyingOnPlane;
+                Ei++;
+            }
+            while(Ei < events.size() && events[Ei].splitPlane.pos == p.pos && events[Ei].type == Event::startingOnPlane) {
+                ++pStartingOnPlane;
+                Ei++;
+            }
+            NP = pLyingOnPlane;
+            NR -= pLyingOnPlane;
+            NR -= pEndingOnPlane;
+            float C;
+            PlaneSide pside = UNKNOWN;
+            SAH(p, V, NL, NR, NP, C, pside);
+            if(C < cEst) {
+                cEst = C;
+                pEst = p;
+                psideEst = pside;
+            }
+            NL += pStartingOnPlane;
+            NL += pLyingOnPlane;
+            NP = 0;
+        }
     }
 }
 
 bool KDNode::checkBlocked(const glm::vec3 &orig, const glm::vec3 &dir, float d) {
-    if (!bbox.intersect(orig, dir, d)) {
-        return false;
-    }
+    RayHit hit;
+    return intersect(orig, dir, hit) && hit.d < d;
+}
 
-    if (left->tris.size() > 0 || right->tris.size() > 0) {
-        return left->checkBlocked(orig, dir, d) || right->checkBlocked(orig, dir, d);
-    }
-    else {
-        RayHit hit;
-        for (const Triangle &tri : tris) {
-            if (tri.intersect(orig, dir, hit)) {
-                if (hit.d < d) {
-                    return true;
-                }
-            }
+void KDNode::sortTriangles(const std::vector<Triangle> &T, const SplitPlane &p, const PlaneSide &pside, std::vector<Triangle> &TL, std::vector<Triangle> &TR) {
+    for(const Triangle &t : T) {
+        BBox tbox = t.getBounds();
+        if(tbox.bbMin[p.axis] == p.pos && tbox.bbMax[p.axis] == p.pos) {
+            if(pside == LEFT)
+                TL.push_back(t);
+            else if(pside == RIGHT)
+                TR.push_back(t);
+            else
+                std::cout << "ERROR WHILE SORTING TRIANLGES" << std::endl;
+        } else {
+            if(tbox.bbMin[p.axis] < p.pos)
+                TL.push_back(t);
+            if(tbox.bbMax[p.axis] > p.pos)
+                TR.push_back(t);
         }
-
-        return false;
     }
 }
 
+// surface area of a volume V
+float surfaceArea(const BBox& V) {
+    return 2*V.dx()*V.dy() + 2*V.dx()*V.dz() + 2*V.dy()*V.dz();
+}
+
+// Probability of hitting volume Vsub, given volume V was hit
+float prob_hit(const BBox& Vsub, const BBox& V){
+    return surfaceArea(Vsub) / surfaceArea(V);
+}
+
+// bias for the cost function s.t. it is reduced if NL or NR becomes zero
+float lambda(int NL, int NR, float PL, float PR) {
+    if((NL == 0 || NR == 0) &&
+       !(PL == 1 || PR == 1) // NOT IN PAPER
+       )
+        return 0.8f;
+    return 1.0f;
+}
+
+inline float cost(float PL, float PR, int NL, int NR) {
+    return(lambda(NL, NR, PL, PR) * (COST_TRAVERSE + COST_INTERSECT * (PL * NL + PR * NR)));
+}
+
+void KDNode::SAH(const SplitPlane &p, const BBox &V, int NL, int NR, int NP, float &CP, PlaneSide& pside) {
+    CP = INFINITY;
+    BBox VL, VR;
+    splitBox(V, p, VL, VR);
+    float PL, PR;
+    PL = prob_hit(VL, V);
+    PR = prob_hit(VR, V);
+    if(PL == 0 || PR == 0) // NOT IN PAPER
+        return;
+    if(V.d(p.axis) == 0) // NOT IN PAPER
+        return;
+    float CPL, CPR;
+    CPL = cost(PL, PR, NL + NP, NR);
+    CPR = cost(PL, PR, NL, NP + NR );
+    if(CPL < CPR) {
+        CP = CPL;
+        pside = LEFT;
+    } else {
+        CP = CPR;
+        pside = RIGHT;
+    }
+}
+
+void KDNode::splitBox(const BBox &V, const SplitPlane &p, BBox &VL, BBox &VR) {
+    VL = V;
+    VR = V;
+    VL.bbMax[p.axis] = p.pos;
+    VR.bbMin[p.axis] = p.pos;
+}
+
+// criterion for stopping subdividing a tree node
+bool KDNode::isDone(int N, float minCv) {
+    // cerr << "terminate: minCv=" << minCv << ", KI*N=" << KI*N << endl;
+    return(minCv > COST_INTERSECT*N);
+}
