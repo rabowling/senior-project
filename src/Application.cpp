@@ -26,7 +26,6 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     physics.init();
     player.init();
     controls.init(inputMode, recordFilename);
-    int width, height;
     glfwGetFramebufferSize(windowManager.getHandle(), &width, &height);
     float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
     LP = glm::perspective(glm::radians(90.0f), aspect, near, far);
@@ -43,10 +42,19 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     modelManager.loadModels("../resources/models");
     materialManager.loadMaterials();
 
+    orthoProjection = ortho(0.0f, (float)width, 0.0f, float(height));
+    hud.init();
+
     initCubemap();
     initDepthmaps();
 
     lightPos = vec3(30, 8, 30);
+
+    for (Light l : lights) {
+        if (l.id == 0) {
+            currentLight = l;
+        }
+    }
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -79,8 +87,8 @@ void Application::updatePortalLights() {
     for (int i = 0; i < NUM_PORTALS; i++) {
         PxRaycastBuffer hit;
         PxVec3 origin = glm2px(portalLights[i].position + portalLights[i].direction);
-        PxVec3 direction = glm2px(normalize(lightPos - (px2glm(origin))));
-        PxReal maxDist = distance(px2glm(origin), lightPos);
+        PxVec3 direction = glm2px(normalize(currentLight.position - (px2glm(origin))));
+        PxReal maxDist = distance(px2glm(origin), currentLight.position);
         bool success = physics.getScene()->raycast(origin, direction, maxDist, hit);
         float newIntensity = 1.0f;
         if (success) {
@@ -99,9 +107,9 @@ void Application::updatePortalLights() {
 }
 
 void Application::update(float dt) {
-    updatePortalLights();
     controls.update();
     player.update(dt);
+    updatePortalLights();
     for (Box &box : app.boxes) {
         box.update(dt);
     }
@@ -223,6 +231,8 @@ void Application::render(float dt) {
         }
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
+
+    hud.draw();
 }
 
 void Application::renderToDepthmap(const mat4 &P, const mat4 &V, const Camera &camera, string shader) {
@@ -246,8 +256,8 @@ void Application::renderToDepthmap(const mat4 &P, const mat4 &V, const Camera &c
                          portalLights[i].position + normalize(portalLights[i].direction),
                          vec3(0, 1, 0));
         } else {
-            LV = lookAt(portalLights[0].position, 
-                         portalLights[0].position + normalize(portalLights[0].direction),
+            LV = lookAt(portalLights[ORANGE_PORTAL].position, 
+                         portalLights[ORANGE_PORTAL].position + normalize(portalLights[ORANGE_PORTAL].direction),
                          vec3(0, 1, 0));
         }
         
@@ -277,7 +287,7 @@ void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &ca
     float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
     mat4 shadowProj = perspective(radians(90.0f), aspect, near, far);
 
-    vec3 curLightPos = lightPos;
+    vec3 curLightPos = currentLight.position;
 
     vector<mat4> shadowTransforms;
     shadowTransforms.push_back(shadowProj * lookAt(curLightPos, curLightPos + vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f, 0.0f)));
@@ -312,7 +322,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
 
     if (!renderingCubemap) {
         shaderManager.bind("tex");
-        glUniform3fv(shaderManager.getUniform("pointLightPos"), 1, value_ptr(lightPos));
+        glUniform3fv(shaderManager.getUniform("pointLightPos"), 1, value_ptr(currentLight.position));
         for (int i = 0; i < NUM_PORTALS; i++) {
             glUniform3fv(shaderManager.getUniform("portalLights[" + to_string(i) + "].pos"), 1, value_ptr(portalLights[i].position));
             glUniform3fv(shaderManager.getUniform("portalLights[" + to_string(i) + "].dir"), 1, value_ptr(portalLights[i].direction));
@@ -329,16 +339,16 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
             glUniformMatrix4fv(shaderManager.getUniform("LS[" + to_string(i) + "]"), 1, GL_FALSE, value_ptr(LP*LV));
         }
         glUniform1f(shaderManager.getUniform("farPlane"), far);
-        glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+        glUniform3fv(shaderManager.getUniform("dirLightColor"), 1, glm::value_ptr(currentLight.intensity));
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
+        CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE1));
+        CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap));
         for (int i = 0; i < NUM_PORTALS; i++) {
             CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE0 + 2 + i));
             CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_2D, depthMaps[i]));
         }
-        CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE1));
-        CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap));
     }
     for (Box &box : boxes) {
         box.draw(M);
@@ -368,6 +378,11 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
     for (Button &button : buttons) {
         button.draw(M);
     }
+
+    for (LightSwitch &lswitch : switches) {
+        lswitch.draw(M);
+    }
+
     if (!renderingFP) {
         player.draw(M);
     }
@@ -375,7 +390,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
     if (!renderingCubemap) {
         // Set up wall shader colors here
         shaderManager.bind("wall");
-        glUniform3fv(shaderManager.getUniform("pointLightPos"), 1, value_ptr(lightPos));
+        glUniform3fv(shaderManager.getUniform("pointLightPos"), 1, value_ptr(currentLight.position));
         for (int i = 0; i < NUM_PORTALS; i++) {
             glUniform3fv(shaderManager.getUniform("portalLights[" + to_string(i) + "].pos"), 1, value_ptr(portalLights[i].position));
             glUniform3fv(shaderManager.getUniform("portalLights[" + to_string(i) + "].dir"), 1, value_ptr(portalLights[i].direction));
@@ -391,17 +406,17 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
                          vec3(0, 1, 0));
             glUniformMatrix4fv(shaderManager.getUniform("LS[" + to_string(i) + "]"), 1, GL_FALSE, value_ptr(LP*LV));
         }
-	    glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
+        glUniform3fv(shaderManager.getUniform("dirLightColor"), 1, glm::value_ptr(currentLight.intensity));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
         glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
         glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
+        CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE1));
+        CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap));
         for (int i = 0; i < NUM_PORTALS; i++) {
             CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE0 + 2 + i));
             CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_2D, depthMaps[i]));
         }
-        CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE1));
-        CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap));
     }
     for (Wall &wall : walls) {
         wall.draw(M);
@@ -569,14 +584,30 @@ void Application::loadLevel(string levelFile) {
         }
         else if (type == "light") {
             float data[6];
+            int id;
             for (int i = 0; i < 6; i++) {
                 iss >> data[i];
                 iss.ignore();
             }
+            iss >> id;
+            iss.ignore();
             Light light;
             light.position = vec3(data[0], data[1], data[2]);
             light.intensity = vec3(data[3], data[4], data[5]);
+            light.id = id;
             lights.push_back(light);
+        } else if (type == "lightswitch") {
+            float data[3];
+            int linkedLightId;
+            iss >> linkedLightId;
+            iss.ignore();
+            for (int i = 0; i < 3; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            PxVec3 pos(data[0], data[1], data[2]);
+            switches.push_back(LightSwitch());
+            switches.rbegin()->init(pos, linkedLightId);
         }
     }
     in.close();
@@ -591,6 +622,10 @@ void Application::loadLevel(string levelFile) {
 
     for (Button &button : buttons) {
         gameObjects.push_back(&button);
+    }
+
+    for (LightSwitch &lswitch : switches) {
+        gameObjects.push_back(&lswitch);
     }
 
     for (Portal &portal : portals) {

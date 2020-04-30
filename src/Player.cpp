@@ -165,41 +165,54 @@ void Player::update(float dt) {
         }
     }
 
-    // Check for picking up item
-    if (app.controls.isPressed(Controls::USE)) {
-        if (!heldItem) {
-            // Calculate origin and direction vectors
-            origin = glm2px(camera.eye);
-            unitDir = glm2px(camera.lookAtPoint - camera.eye);
-            unitDir.normalize();
-            origin += unitDir;
+    origin = glm2px(camera.eye);
+    unitDir = glm2px(camera.lookAtPoint - camera.eye);
+    unitDir.normalize();
+    origin += unitDir;
 
-            // Perform raycast
-            PxRaycastBuffer hit;
-            PxReal maxDist = 50.0;
-            raycastMode = PICK_UP;
-            bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
-                PxQueryFilterData(PxQueryFlags(PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), raycastFilterCallback.get());
-            if (success) {
-                if (hit.block.actor->is<PxRigidBody>()) {
+    // Perform raycast
+    PxRaycastBuffer hit;
+    PxReal maxDist = 50.0;
+    raycastMode = USE;
+
+    if (!heldItem) {
+        bool success = app.physics.getScene()->raycast(origin, unitDir, maxDist, hit, PxHitFlags(PxHitFlag::eDEFAULT),
+            PxQueryFilterData(PxQueryFlags(PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER)), raycastFilterCallback.get());
+        if (success) {
+            GameObject *obj = static_cast<GameObject *>(hit.block.actor->userData);
+            if (dynamic_cast<Box *>(obj)) {
+                app.hud.updateToolTip("Pick up.");
+                if (app.controls.isPressed(Controls::USE)) {
                     heldItem = static_cast<PxRigidBody *>(hit.block.actor);
                     heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
                 }
+            } else if (dynamic_cast<LightSwitch *>(obj)) {
+                //cout << "pointing at light switch" << endl;
+                app.hud.updateToolTip("Turn on light.");
+                if (app.controls.isPressed(Controls::USE)) {
+                    LightSwitch *lswitch = static_cast<LightSwitch *>(obj);
+                    for (Light l : app.lights) {
+                        if (l.id == lswitch->lightId) {
+                            app.currentLight = l;
+                            cout << "new light: " << l.id << endl;
+                        }
+                    }
+                }
+            } else {
+                app.hud.updateToolTip("");
             }
         }
-        else {
-            heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, false);
-            heldItem = NULL;
-        }
-    }
-
-    // Move held item in front of player
-    if (heldItem != NULL) {
+    } else {
         float holdDistance = 5.f;
         PxVec3 targetLocation = glm2px(camera.eye + holdDistance * (camera.lookAtPoint - camera.eye));
         PxVec3 vectorToTargetLocation = targetLocation - heldItem->getGlobalPose().p;
+        app.hud.updateToolTip("Drop.");
 
         heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);
+        if (app.controls.isPressed(Controls::USE)) {
+            heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, false);
+            heldItem = NULL;
+        }
     }
 
     // Fire portals
@@ -223,7 +236,7 @@ void Player::update(float dt) {
                 * angleAxis((float) M_PI_2, cross(portal->localForward, portal->localUp));
             portal->setPosition(newPos, newRot);
 
-            PortalLight &curLight = (app.controls.isPressed(Controls::PRIMARY_FIRE)) ? app.portalLights[ORANGE_PORTAL] : app.portalLights[BLUE_PORTAL];
+            PortalLight &curLight = (app.controls.isPressed(Controls::PRIMARY_FIRE)) ? app.portalLights[BLUE_PORTAL] : app.portalLights[ORANGE_PORTAL];
             curLight.direction = portal->getForward();
             curLight.position = newPos;
             curLight.portal = portal;
@@ -243,7 +256,7 @@ Player::RaycastFilterCallback::RaycastFilterCallback(Player *parent) : parent(pa
 
 PxQueryHitType::Enum Player::RaycastFilterCallback::preFilter(const PxFilterData &filterData, const PxShape *shape, const PxRigidActor *actor, PxHitFlags &queryFlags)
 {
-    if (parent->raycastMode == PICK_UP) {
+    if (parent->raycastMode == USE) {
         if (parent->mController->getActor() == actor) {
             return PxQueryHitType::eNONE;
         }

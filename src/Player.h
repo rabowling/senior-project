@@ -35,7 +35,7 @@ class Player : public physx::PxUserControllerHitReport
         float height = 2;
         glm::vec3 camOffset = glm::vec3(0, 1, 0);
         
-        enum RaycastMode { PICK_UP, FIRE_PORTAL };
+        enum RaycastMode { USE, FIRE_PORTAL };
         RaycastMode raycastMode;
 
         std::vector<Portal *> touchingPortals;

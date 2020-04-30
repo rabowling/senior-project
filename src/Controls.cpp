@@ -75,6 +75,9 @@ void Controls::update() {
         if (glfwGetKey(handle, GLFW_KEY_P) == GLFW_PRESS) {
             handleEvent(DEBUG_LIGHT);
         }
+        if (glfwGetKey(handle, GLFW_KEY_F) == GLFW_PRESS) {
+            handleEvent(TOGGLE_LIGHT_SWITCH);
+        }
 
         for (InputEvent e : prevHeld) {
             if (held.find(e) == held.end()) {

@@ -18,6 +18,14 @@ void MaterialManager::loadMaterials() {
         /* shine */ 12.8
     );
 
+    materials["lightswitch"] = Material(
+        "marble",
+        /* spec */  vec3(0.74151, 0.74151, 0.0),
+        /* dif */   vec3(0.74151, 0.74151, 0.0),
+        /* amb */   vec3(0.01, 0.018725, 0.01745),
+        /* shine */ 12.8
+    );
+
     materials["concrete"] = Material(
         "concrete",
         /* spec */  vec3(0.508273, 0.508273, 0.508273),
