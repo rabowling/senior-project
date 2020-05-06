@@ -33,7 +33,7 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     modelManager.loadModels("../resources/models");
     materialManager.loadMaterials();
 
-    lightPos = vec3(30, 8, 30);
+    lightPos = lights[0].position;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -51,7 +51,7 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
         if (renderMode == RENDER_RAYTRACE) {
             string numString = to_string(stepCount);
             numString = string(5 - numString.length(), '0') + numString;
-            renderRT(1920, 1080, "render/frame" + numString + ".png");
+            renderRT(640, 360, "render/frame" + numString + ".png");
             if (controls.playbackFinished()) {
                 break;
             }

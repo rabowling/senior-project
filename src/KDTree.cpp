@@ -173,7 +173,7 @@ std::unique_ptr<KDNode> KDNode::build(const std::vector<Triangle> &tris, int dep
     vector<Triangle> leftTris;
     vector<Triangle> rightTris;
     vec3 bboxSize = node->bbox.bbMax - node->bbox.bbMin;
-    float longestAxis = std::max({bboxSize.x, bboxSize.y, bboxSize.z});
+    float longestAxis = std::max(bboxSize.x, std::max(bboxSize.y, bboxSize.z));
     for (const Triangle &tri : tris) {
         vec3 triMidpoint = (tri.verts[0] + tri.verts[1] + tri.verts[2]) / 3.0f;
         for (int i = 0; i < 3; i++) {

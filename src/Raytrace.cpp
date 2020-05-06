@@ -14,11 +14,11 @@
 using namespace glm;
 using namespace std;
 
-#define NUM_BOUNCES 1
-#define NUM_BOUNCE_RAYS 8
+int NUM_BOUNCES = 1;
+int NUM_BOUNCE_RAYS = 32;
 
 glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
-    vec3 dir = normalize(vec3(rand(), rand(), rand()));
+    vec3 dir = normalize(vec3(rand() % 2000 - 1000, rand() % 2000 - 1000, rand() % 2000 - 1000));
     if (dot(dir, normal) < 0) {
         dir = -dir;
     }
@@ -115,7 +115,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
         for (const Light &light : app.lights) {
             // Blinn-Phong shading
             vec3 ambient = material->amb * texColor * light.intensity;
-            color += ambient;
+            //color += ambient;
 
             // Shadow rays
             RayHit shadowRayHit;
@@ -179,11 +179,11 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
 
         if (bounceDepth < NUM_BOUNCES) {
             vec3 indirectLight(0);
-            for (int i = 0; i < NUM_BOUNCE_RAYS; i++) {
+            for (int i = 0; i < NUM_BOUNCE_RAYS / pow(2, bounceDepth); i++) {
                 vec3 dir = randomDirInSphere(hitNorm);
                 indirectLight += traceColor(hitPos, dir, kdtree, bounceDepth + 1);
             }
-            color += indirectLight / (float) NUM_BOUNCE_RAYS;
+            color += indirectLight * texColor / 255.f / (float) NUM_BOUNCE_RAYS;
         }
 
         return color;
