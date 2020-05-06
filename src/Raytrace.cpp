@@ -119,8 +119,7 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
 
             // Shadow rays
             RayHit shadowRayHit;
-            if (!kdtree->intersect(hitPos, normalize(light.position - hitPos), shadowRayHit)
-                    || shadowRayHit.d > distance(light.position, hitPos)) {
+            if (!kdtree->checkBlocked(hitPos, normalize(light.position - hitPos), distance(light.position, hitPos))) {
                 vec3 lightDir = normalize(light.position - hitPos);
                 vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
                 vec3 H = normalize((lightDir - dir) / 2.f);
