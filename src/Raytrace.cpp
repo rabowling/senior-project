@@ -14,9 +14,9 @@
 using namespace glm;
 using namespace std;
 
-glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<KDNode> &kdtree) {
-    RayHit hit;
-    if (!kdtree->intersect(orig, dir, hit)) {
+glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
+    SurfaceInteraction hit;
+    if (!kdtree.Intersect(ray, hit)) {
         return vec3(0, 0, 0);
     }
 
@@ -107,12 +107,13 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
             color += ambient;
 
             // Shadow rays
-            RayHit shadowRayHit;
-            if (!kdtree->intersect(hitPos, normalize(light.position - hitPos), shadowRayHit)
+            SurfaceInteraction shadowRayHit;
+            Ray shadowRay(hitPos, normalize(light.position - hitPos));
+            if (!kdtree.Intersect(shadowRay, shadowRayHit)
                     || shadowRayHit.d > distance(light.position, hitPos)) {
                 vec3 lightDir = normalize(light.position - hitPos);
                 vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
-                vec3 H = normalize((lightDir - dir) / 2.f);
+                vec3 H = normalize((lightDir - ray.d) / 2.f);
                 vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
                 color += diffuse + specular;
             }
@@ -131,7 +132,8 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
                 camTransform2.translate(-portal.linkedPortal->position);
 
                 vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(light.position, 1));
-                if (kdtree->intersect(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
+                Ray portalRay(hitPos, normalize(newLightPos - hitPos));
+                if (kdtree.Intersect(portalRay, shadowRayHit)
                         && shadowRayHit.obj == &portal) {
                     vec3 vert2[3];
                     Shape *model2 = shadowRayHit.obj->getModel();
@@ -154,10 +156,11 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
                     vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
                     vec3 shadowDir = normalize(shadowOrig - shadowEye);
                     float d = distance(light.position, shadowOrig);
-                    if (!kdtree->checkBlocked(shadowOrig, shadowDir, d)) {
+                    Ray portalShadowRay(shadowOrig, shadowDir, d);
+                    if (!kdtree.IntersectP(portalShadowRay)) {
                         vec3 lightDir = normalize(newLightPos - hitPos);
                         vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
-                        vec3 H = normalize((lightDir - dir) / 2.f);
+                        vec3 H = normalize((lightDir - ray.d) / 2.f);
                         vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
                         color = color + diffuse + specular;
                     }
@@ -178,10 +181,11 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
         camTransform.rotate(inverse(portal->orientation));
         camTransform.translate(-portal->position);
 
-        vec3 newEye = vec3(camTransform.topMatrix() * vec4(orig, 1));
+        vec3 newEye = vec3(camTransform.topMatrix() * vec4(ray.o, 1));
         vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
         vec3 newDir = normalize(newOrig - newEye);
-        return traceColor(newOrig, newDir, kdtree);
+        Ray portalRay(newOrig, newDir);
+        return traceColor(portalRay, kdtree);
     }
     else if (dynamic_cast<PortalOutline *>(hit.obj)) {
         return static_cast<PortalOutline *>(hit.obj)->color * 255.f;
@@ -200,16 +204,21 @@ void renderRT(int width, int height, const std::string &filename) {
     float angle = tan(M_PI * 0.5 * fov / 180);
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
 
-    unique_ptr<KDNode> kdtree = KDNode::build(app.gameObjects);
+    KdTreeAccel kdtree(app.gameObjects);
+    int count = 0;
 
     #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
+            if (++count % 1000 == 0) {
+                cout << count << endl;
+            }
             float xx = (2 * ((x + 0.5) * invWidth) - 1) * angle * aspect;
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));
             vec3 orig = app.player.camera.eye;
-            vec3 pixel = traceColor(orig, dir, kdtree);
+            Ray ray(orig, dir);
+            vec3 pixel = traceColor(ray, kdtree);
             for (int i = 0; i < 3; i++) {
                 pixels[(y*width+x)*3+i] = (unsigned char) (std::max(0, std::min(255, (int) round(pixel[i]))));
             }
