@@ -108,9 +108,8 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
 
             // Shadow rays
             SurfaceInteraction shadowRayHit;
-            Ray shadowRay(hitPos, normalize(light.position - hitPos));
-            if (!kdtree.Intersect(shadowRay, shadowRayHit)
-                    || shadowRayHit.d > distance(light.position, hitPos)) {
+            Ray shadowRay(hitPos, normalize(light.position - hitPos), distance(light.position, hitPos));
+            if (!kdtree.IntersectP(shadowRay)) {
                 vec3 lightDir = normalize(light.position - hitPos);
                 vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
                 vec3 H = normalize((lightDir - ray.d) / 2.f);
@@ -204,14 +203,18 @@ void renderRT(int width, int height, const std::string &filename) {
     float angle = tan(M_PI * 0.5 * fov / 180);
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
 
-    KdTreeAccel kdtree(app.gameObjects);
+    KdTreeAccel kdtree(app.gameObjects, 80, 1, 0.5, 1, -1);
     int count = 0;
+    float t = glfwGetTime();
 
     #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             if (++count % 1000 == 0) {
-                cout << count << endl;
+                cout << count << "\t";
+                float newT = glfwGetTime();
+                cout << newT - t << endl;
+                t = newT;
             }
             float xx = (2 * ((x + 0.5) * invWidth) - 1) * angle * aspect;
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
