@@ -10,6 +10,8 @@
 #include <iostream>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/intersect.hpp>
 
 using namespace glm;
 using namespace std;
@@ -26,6 +28,15 @@ glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
         dir = -dir;
     }
     return dir;
+}
+
+bool fastCheckPortal(const glm::vec3 &orig, const glm::vec3 &dir, Portal &portal) {
+    float d;
+    if (glm::intersectRayPlane(orig, dir, portal.position, portal.getForward(), d)) {
+        vec3 hitPos = orig + dir * d;
+        return portal.pointInSideBounds(hitPos);
+    }
+    return false;
 }
 
 glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<KDNode> &kdtree, int bounceDepth) {
@@ -158,7 +169,9 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
                 camTransform2.translate(-portal.linkedPortal->position);
 
                 vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(light.position, 1));
-                if (kdtree->intersect(hitPos, normalize(newLightPos - hitPos), shadowRayHit)
+                vec3 lightDir = normalize(newLightPos - hitPos);
+                if (fastCheckPortal(hitPos, lightDir, portal)
+                        && kdtree->intersect(hitPos, lightDir, shadowRayHit)
                         && shadowRayHit.obj == &portal) {
                     vec3 vert2[3];
                     Shape *model2 = shadowRayHit.obj->getModel();
@@ -182,7 +195,6 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
                     vec3 shadowDir = normalize(shadowOrig - shadowEye);
                     float d = distance(light.position, shadowOrig);
                     if (!kdtree->checkBlocked(shadowOrig, shadowDir, d)) {
-                        vec3 lightDir = normalize(newLightPos - hitPos);
                         vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
                         vec3 H = normalize((lightDir - dir) / 2.f);
                         vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
