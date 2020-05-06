@@ -14,8 +14,11 @@
 using namespace glm;
 using namespace std;
 
-int NUM_BOUNCES = 1;
-int NUM_BOUNCE_RAYS = 32;
+const int NUM_BOUNCES = 1;
+const int NUM_BOUNCE_RAYS = 16;
+const int LIGHT_RADIUS = 2;
+const int NUM_SHADOW_SAMPLES_X = 3;
+const int NUM_SHADOW_SAMPLES_Y = 3;
 
 glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
     vec3 dir = normalize(vec3(rand() % 2000 - 1000, rand() % 2000 - 1000, rand() % 2000 - 1000));
@@ -119,13 +122,27 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
 
             // Shadow rays
             RayHit shadowRayHit;
-            if (!kdtree->checkBlocked(hitPos, normalize(light.position - hitPos), distance(light.position, hitPos))) {
-                vec3 lightDir = normalize(light.position - hitPos);
-                vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
-                vec3 H = normalize((lightDir - dir) / 2.f);
-                vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
-                color += diffuse + specular;
+            vec3 lightForward = normalize(hitPos - light.position);
+            vec3 lightRight = cross(vec3(0, 1, 0), lightForward);
+            vec3 lightUp = cross(lightForward, lightRight);
+            vec3 directLight(0);
+            for (int x = 0; x < NUM_SHADOW_SAMPLES_X; x++) {
+                for (int y = 0; y < NUM_SHADOW_SAMPLES_Y; y++) {
+                    float offsetX = (x - NUM_SHADOW_SAMPLES_X / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_X * LIGHT_RADIUS;
+                    float offsetY = (y - NUM_SHADOW_SAMPLES_Y / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_Y * LIGHT_RADIUS;
+
+                    vec3 samplePos = light.position + lightRight * offsetX + lightUp * offsetY;
+
+                    vec3 lightDir = normalize(samplePos - hitPos);
+                    if (!kdtree->checkBlocked(hitPos, lightDir, distance(samplePos, hitPos))) {
+                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
+                        vec3 H = normalize((lightDir - dir) / 2.f);
+                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
+                        directLight += diffuse + specular;
+                    }
+                }
             }
+            color += directLight / (float) (NUM_SHADOW_SAMPLES_X * NUM_SHADOW_SAMPLES_Y);
 
             // Check for light through portals
             for (Portal &portal : app.portals) {
