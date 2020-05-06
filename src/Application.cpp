@@ -48,8 +48,6 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     initCubemap();
     initDepthmaps();
 
-    lightPos = vec3(30, 8, 30);
-
     for (Light l : lights) {
         if (l.id == 0) {
             currentLight = l;
@@ -72,7 +70,7 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
         if (renderMode == RENDER_RAYTRACE) {
             string numString = to_string(stepCount);
             numString = string(5 - numString.length(), '0') + numString;
-            renderRT(1920, 1080, "render/frame" + numString + ".png");
+            renderRT(640, 360, "render/frame" + numString + ".png");
             if (controls.playbackFinished()) {
                 break;
             }

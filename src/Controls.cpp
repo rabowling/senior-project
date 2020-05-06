@@ -16,6 +16,7 @@ void Controls::init(InputMode mode, string recordingFile) {
     this->recordingFile = recordingFile;
     if (mode == PLAYBACK) {
         loadRecording(recordingFile);
+        glfwSetInputMode(app.windowManager.getHandle(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 }
 
