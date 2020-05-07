@@ -34,7 +34,7 @@ void Portal::setPosition(glm::vec3 position, glm::quat orientation) {
 
     // up plane
     vec3 up = getUp();
-    planePos = position + up * 2.f;
+    planePos = position + up * 2.5f;
     bounds[1] = vec4(-up, -dot(planePos, -up));
 
     // down plane
