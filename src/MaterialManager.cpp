@@ -11,11 +11,11 @@ using namespace glm;
 
 void MaterialManager::loadMaterials() {
     materials["marble"] = Material(
-        "marble",
-        /* spec */  vec3(0.297254, 0.30829, 0.306678),
-        /* dif */   vec3(0.396, 0.74151, 0.69102),
-        /* amb */   vec3(0.01, 0.018725, 0.01745),
-        /* shine */ 12.8
+        "cube3",
+        /* spec */  vec3(0.508273, 0.508273, 0.508273),
+        /* dif */   vec3(1, 1, 1),
+        /* amb */   vec3(0.019225, 0.019225, 0.019225),
+        /* shine */ 51.2
     );
 
     materials["lightswitch"] = Material(
@@ -27,7 +27,7 @@ void MaterialManager::loadMaterials() {
     );
 
     materials["concrete"] = Material(
-        "concrete",
+        "wall",
         /* spec */  vec3(0.508273, 0.508273, 0.508273),
         /* dif */   vec3(0.50754, 0.50754, 0.50754),
         /* amb */   vec3(0.019225, 0.019225, 0.019225),

@@ -43,7 +43,7 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
     materialManager.loadMaterials();
 
     orthoProjection = ortho(0.0f, (float)width, 0.0f, float(height));
-    hud.init();
+    //hud.init();
 
     initCubemap();
     initDepthmaps();
@@ -232,7 +232,7 @@ void Application::render(float dt) {
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
 
-    hud.draw();
+    //hud.draw();
 }
 
 void Application::renderToDepthmap(const mat4 &P, const mat4 &V, const Camera &camera, string shader) {
@@ -281,8 +281,8 @@ void Application::renderToDepthmap(const mat4 &P, const mat4 &V, const Camera &c
 void Application::renderToCubemap(const mat4 &P, const mat4 &V, const Camera &camera) {
     app.renderingCubemap = true;
     
-    CHECKED_GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[0]));
-    CHECKED_GL_CALL(glClear(GL_DEPTH_BUFFER_BIT));
+    //CHECKED_GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[0]));
+    //CHECKED_GL_CALL(glClear(GL_DEPTH_BUFFER_BIT));
 
     float aspect = (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT;
     mat4 shadowProj = perspective(radians(90.0f), aspect, near, far);
@@ -354,27 +354,6 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         box.draw(M);
     }
 
-    // if (!renderingCubemap) {
-    //     glUniform3fv(shaderManager.getUniform("pointLightPos"), 1, value_ptr(lightPos));
-    //     for (int i = 0; i < NUM_PORTALS; i++) {
-    //         glUniform3fv(shaderManager.getUniform("portalLights[" + to_string(i) + "].pos"), 1, value_ptr(portalLights[i].position));
-    //         glUniform3fv(shaderManager.getUniform("portalLights[" + to_string(i) + "].dir"), 1, value_ptr(portalLights[i].direction));
-    //         glUniform1f(shaderManager.getUniform("portalLights[" + to_string(i) + "].innerCutoff"), INNER_CUTOFF);
-    //         glUniform1f(shaderManager.getUniform("portalLights[" + to_string(i) + "].outerCutoff"), OUTER_CUTOFF);
-    //         glUniform1f(shaderManager.getUniform("portalLights[" + to_string(i) + "].intensity"), 1.0f);
-    //     }
-    //     glUniform1f(shaderManager.getUniform("farPlane"), far);
-    //     glUniform3f(shaderManager.getUniform("dirLightColor"), 1, 1, 1);
-    //     glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
-    //     glUniformMatrix4fv(shaderManager.getUniform("P"), 1, GL_FALSE, glm::value_ptr(P));
-    //     glUniformMatrix4fv(shaderManager.getUniform("V"), 1, GL_FALSE, glm::value_ptr(V));
-    //     glActiveTexture(GL_TEXTURE1);
-    //     glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-    //     for (int i = 1; i < NUM_PORTALS + 1; i++) {
-    //         CHECKED_GL_CALL(glActiveTexture(GL_TEXTURE1 + i));
-    //         CHECKED_GL_CALL(glBindTexture(GL_TEXTURE_2D, depthMaps[i-1]));
-    //     }
-    // }
     for (Button &button : buttons) {
         button.draw(M);
     }
@@ -522,6 +501,7 @@ void Application::loadLevel(string levelFile) {
                 iss.ignore();
             }
             player.setPosition(data[0], data[1], data[2]);
+            player.startPos = vec3(data[0], data[1], data[2]);
         }
         else if (type == "portal") {
             int intData[2];

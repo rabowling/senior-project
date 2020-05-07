@@ -25,4 +25,6 @@ private:
     std::vector<Portal *> touchingPortals;
     std::vector<Portal *> prevTouchingPortals;
     glm::vec3 scale;
+    physx::PxVec3 startPos;
+    physx::PxQuat startRot;
 };

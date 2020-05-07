@@ -124,6 +124,10 @@ void Player::update(float dt) {
     moveFilter.mFilterFlags = PxQueryFlags(PxQueryFlag::eSTATIC | PxQueryFlag::eDYNAMIC | PxQueryFlag::ePREFILTER);
 
     mController->move(displacement, 0.01f, dt, moveFilter, NULL);
+
+    if (mController->getPosition().y <= -50) {
+        setPosition(startPos.x, startPos.y, startPos.z);
+    }
     
     // keep track of portals that player is touching
     prevTouchingPortals = touchingPortals;
@@ -181,14 +185,14 @@ void Player::update(float dt) {
         if (success) {
             GameObject *obj = static_cast<GameObject *>(hit.block.actor->userData);
             if (dynamic_cast<Box *>(obj)) {
-                app.hud.updateToolTip("Pick up.");
+                //app.hud.updateToolTip("Pick up.");
                 if (app.controls.isPressed(Controls::USE)) {
                     heldItem = static_cast<PxRigidBody *>(hit.block.actor);
                     heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
                 }
             } else if (dynamic_cast<LightSwitch *>(obj)) {
                 //cout << "pointing at light switch" << endl;
-                app.hud.updateToolTip("Turn on light.");
+                //app.hud.updateToolTip("Turn on light.");
                 if (app.controls.isPressed(Controls::USE)) {
                     LightSwitch *lswitch = static_cast<LightSwitch *>(obj);
                     for (Light l : app.lights) {
@@ -199,14 +203,14 @@ void Player::update(float dt) {
                     }
                 }
             } else {
-                app.hud.updateToolTip("");
+                //app.hud.updateToolTip("");
             }
         }
     } else {
         float holdDistance = 5.f;
         PxVec3 targetLocation = glm2px(camera.eye + holdDistance * (camera.lookAtPoint - camera.eye));
         PxVec3 vectorToTargetLocation = targetLocation - heldItem->getGlobalPose().p;
-        app.hud.updateToolTip("Drop.");
+        //app.hud.updateToolTip("Drop.");
 
         heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);
         if (app.controls.isPressed(Controls::USE)) {
