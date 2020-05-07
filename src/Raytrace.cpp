@@ -19,8 +19,8 @@ using namespace std;
 const int NUM_BOUNCES = 1;
 const int NUM_BOUNCE_RAYS = 16;
 const int LIGHT_RADIUS = 2;
-const int NUM_SHADOW_SAMPLES_X = 3;
-const int NUM_SHADOW_SAMPLES_Y = 3;
+const int NUM_SHADOW_SAMPLES_X = 1;
+const int NUM_SHADOW_SAMPLES_Y = 1;
 
 glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
     vec3 dir = normalize(vec3(rand() % 2000 - 1000, rand() % 2000 - 1000, rand() % 2000 - 1000));
@@ -139,8 +139,12 @@ glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::uni
             vec3 directLight(0);
             for (int x = 0; x < NUM_SHADOW_SAMPLES_X; x++) {
                 for (int y = 0; y < NUM_SHADOW_SAMPLES_Y; y++) {
-                    float offsetX = (x - NUM_SHADOW_SAMPLES_X / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_X * LIGHT_RADIUS;
-                    float offsetY = (y - NUM_SHADOW_SAMPLES_Y / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_Y * LIGHT_RADIUS;
+                    float offsetX = 0;
+                    float offsetY = 0;
+                    if (NUM_SHADOW_SAMPLES_X * NUM_SHADOW_SAMPLES_Y > 1) {
+                        offsetX = (x - NUM_SHADOW_SAMPLES_X / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_X * LIGHT_RADIUS;
+                        offsetY = (y - NUM_SHADOW_SAMPLES_Y / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_Y * LIGHT_RADIUS;
+                    }
 
                     vec3 samplePos = light.position + lightRight * offsetX + lightUp * offsetY;
 
