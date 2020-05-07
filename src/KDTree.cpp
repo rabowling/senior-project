@@ -115,7 +115,7 @@ bool Primitive::Intersect(const Ray &r, SurfaceInteraction &si) const {
 
 bool Primitive::IntersectP(const Ray &r) const {
     SurfaceInteraction si;
-    return Intersect(r, si);
+    return Intersect(r, si) && si.d <= r.tMax;
 }
 
 struct KdAccelNode {
@@ -390,7 +390,7 @@ bool KdTreeAccel::Intersect(const Ray &ray, SurfaceInteraction &isect) const {
     const KdAccelNode *node = &nodes[0];
     while (node != nullptr) {
         // Bail out if we found a hit closer than the current node
-        if (ray.tMax < tMin) break;
+        if (hit && isect.d < tMin) break;
         if (!node->IsLeaf()) {
             // Process kd-tree interior node
 
