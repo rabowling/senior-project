@@ -18,6 +18,7 @@ using namespace std;
 using namespace glm;
 
 #define FPS 1.0f / 60.0f
+#define RT_FRAMESKIP 3
 
 Application app;
 
@@ -67,8 +68,8 @@ void Application::run(std::string levelFilename, Controls::InputMode inputMode, 
         glfwSwapBuffers(windowManager.getHandle());
         glfwPollEvents();
 
-        if (renderMode == RENDER_RAYTRACE) {
-            string numString = to_string(stepCount);
+        if (renderMode == RENDER_RAYTRACE && stepCount % RT_FRAMESKIP == 0) {
+            string numString = to_string(stepCount / RT_FRAMESKIP);
             numString = string(5 - numString.length(), '0') + numString;
             renderRT(640, 360, "render/frame" + numString + ".png");
             if (controls.playbackFinished()) {
