@@ -204,18 +204,10 @@ void renderRT(int width, int height, const std::string &filename) {
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
 
     KdTreeAccel kdtree(app.gameObjects, 80, 1, 0.5, 1, -1);
-    int count = 0;
-    float t = glfwGetTime();
 
     #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            if (++count % 1000 == 0) {
-                cout << count << "\t";
-                float newT = glfwGetTime();
-                cout << newT - t << endl;
-                t = newT;
-            }
             float xx = (2 * ((x + 0.5) * invWidth) - 1) * angle * aspect;
             float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
             vec3 dir = normalize(vec3(view * vec4(xx, yy, -1, 0)));

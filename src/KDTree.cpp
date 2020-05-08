@@ -2,6 +2,7 @@
 #include "Portal.h"
 #include "PortalOutline.h"
 #include <glm/glm.hpp>
+#include <algorithm>
 
 using namespace glm;
 using namespace std;
