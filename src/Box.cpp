@@ -32,6 +32,18 @@ void Box::draw(MatrixStack &M) {
     }
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(M.topMatrix()));
     app.modelManager.draw("cube");
+
+    for (Portal *portal : touchingPortals) {
+        MatrixStack camTransform;
+        camTransform.translate(portal->linkedPortal->position);
+        camTransform.rotate(M_PI, portal->linkedPortal->getUp());
+        camTransform.rotate(portal->linkedPortal->orientation);
+        camTransform.rotate(inverse(portal->orientation));
+        camTransform.translate(-portal->position);
+        glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(camTransform.topMatrix() * M.topMatrix()));
+        app.modelManager.draw("cube");
+    }
+
     M.popMatrix();
 }
 
@@ -71,6 +83,8 @@ void Box::update(float dt) {
 
             vec3 newVel = vec3(camTransform.topMatrix() * vec4(px2glm(body->getLinearVelocity()), 0));
             body->setLinearVelocity(glm2px(newVel));
+
+            app.player.holdTransform = camTransform.topMatrix() * app.player.holdTransform;
 
             prevTouchingPortals = touchingPortals;
             touchingPortals.clear();

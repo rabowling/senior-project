@@ -23,11 +23,11 @@ public:
     glm::vec3 pMin, pMax;
 };
 
+class Primitive;
 struct SurfaceInteraction {
     float d;
     float u, v;
-    unsigned int faceIndex;
-    GameObject *obj;
+    Primitive *tri;
     bool operator<(const SurfaceInteraction &rhs);
     bool operator>(const SurfaceInteraction &rhs) { return !operator<(rhs); }
 };

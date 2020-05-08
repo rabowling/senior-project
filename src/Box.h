@@ -20,9 +20,9 @@ public:
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
     virtual Material *getMaterial() const;
+    std::vector<Portal *> touchingPortals;
     
 private:
-    std::vector<Portal *> touchingPortals;
     std::vector<Portal *> prevTouchingPortals;
     glm::vec3 scale;
     physx::PxVec3 startPos;

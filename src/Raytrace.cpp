@@ -63,15 +63,9 @@ bool checkShadowThroughPortal(const glm::vec3 pos, const glm::vec3 &lightPos, Po
     SurfaceInteraction shadowRayHit;
     if (fastCheckPortal(pos, lightDir, portal)
             && kdtree.Intersect(portalRay, shadowRayHit)
-            && shadowRayHit.obj == &portal) {
-        vec3 vert2[3];
-        Shape *model2 = shadowRayHit.obj->getModel();
-        for (int vNum = 0; vNum < 3; vNum++) {
-            unsigned int vIdx = model2->eleBuf[shadowRayHit.faceIndex*3+vNum];
-            for (int i = 0; i < 3; i++) {
-                vert2[vNum][i] = shadowRayHit.obj->posBufCache[vIdx*3+i];
-            }
-        }
+            && shadowRayHit.tri->obj == &portal) {
+        vec3 (&vert2)[3] = shadowRayHit.tri->verts;
+        Shape *model2 = shadowRayHit.tri->obj->getModel();
 
         MatrixStack camTransform;
         camTransform.translate(portal.linkedPortal->position);
@@ -93,14 +87,13 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
         return vec3(0, 0, 0);
     }
 
-    vec3 vert[3];
+    vec3 (&vert)[3] = hit.tri->verts;
     vec2 vt[3];
     vec3 vn[3];
-    Shape *model = hit.obj->getModel();
+    Shape *model = hit.tri->obj->getModel();
     for (int vNum = 0; vNum < 3; vNum++) {
-        unsigned int vIdx = model->eleBuf[hit.faceIndex*3+vNum];
+        unsigned int vIdx = model->eleBuf[hit.tri->faceIndex*3+vNum];
         for (int i = 0; i < 3; i++) {
-            vert[vNum][i] = hit.obj->posBufCache[vIdx*3+i];
             vn[vNum][i] = model->norBuf[vIdx*3+i];
         }
 
@@ -112,14 +105,14 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
     vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
     vec3 hitNorm = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
 
-    Material *material = hit.obj->getMaterial();
+    Material *material = hit.tri->obj->getMaterial();
     if (material) {
         Texture *texture = material->getTexture();
         vec2 uv = hit.u * vt[1] + hit.v * vt[2] + (1 - hit.u - hit.v) * vt[0];
 
         // scale UV for Wall objects
-        if (dynamic_cast<Wall *>(hit.obj)) {
-            Wall *wall = static_cast<Wall *>(hit.obj);
+        if (dynamic_cast<Wall *>(hit.tri->obj)) {
+            Wall *wall = static_cast<Wall *>(hit.tri->obj);
             if (dot(vn[0], vec3(1, 0, 0)) != 0) {
                 uv.x *= wall->size.y;
                 uv.y *= wall->size.z;
@@ -238,8 +231,8 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
 
         return color;
     }
-    else if (dynamic_cast<Portal *>(hit.obj)) {
-        Portal *portal = static_cast<Portal *>(hit.obj);
+    else if (dynamic_cast<Portal *>(hit.tri->obj)) {
+        Portal *portal = static_cast<Portal *>(hit.tri->obj);
 
         MatrixStack camTransform;
         camTransform.translate(portal->linkedPortal->position);
@@ -254,8 +247,8 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
         Ray portalRay(newOrig, newDir);
         return traceColor(portalRay, kdtree, bounceDepth);
     }
-    else if (dynamic_cast<PortalOutline *>(hit.obj)) {
-        return static_cast<PortalOutline *>(hit.obj)->color * 255.f;
+    else if (dynamic_cast<PortalOutline *>(hit.tri->obj)) {
+        return static_cast<PortalOutline *>(hit.tri->obj)->color * 255.f;
     }
     else {
         return vec3(255);

@@ -22,6 +22,7 @@ class Player : public physx::PxUserControllerHitReport
         Camera camera;
         Portal *portals[2] = { nullptr, nullptr };
         glm::vec3 startPos;
+        glm::mat4 holdTransform;
         
     private:
         physx::PxController *mController;

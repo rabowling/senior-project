@@ -3,6 +3,7 @@
 #include "PortalOutline.h"
 #include <glm/glm.hpp>
 #include <algorithm>
+#include "Box.h"
 
 using namespace glm;
 using namespace std;
@@ -11,16 +12,16 @@ using namespace std;
 
 bool SurfaceInteraction::operator<(const SurfaceInteraction &rhs) {
     if (abs(d - rhs.d) < 0.0001) {
-        if (dynamic_cast<Portal *>(obj)) {
+        if (dynamic_cast<Portal *>(tri->obj)) {
             return true;
         }
-        else if (dynamic_cast<Portal *>(rhs.obj)) {
+        else if (dynamic_cast<Portal *>(rhs.tri->obj)) {
             return false;
         }
-        else if (dynamic_cast<PortalOutline *>(obj)) {
+        else if (dynamic_cast<PortalOutline *>(tri->obj)) {
             return true;
         }
-        else if (dynamic_cast<PortalOutline *>(rhs.obj)) {
+        else if (dynamic_cast<PortalOutline *>(rhs.tri->obj)) {
             return false;
         }
     }
@@ -158,37 +159,48 @@ struct BoundEdge {
     EdgeType type;
 };
 
+void gameObjectToPrimitives(GameObject *obj, const mat4 &transform, std::vector<std::shared_ptr<Primitive>> &tris) {
+    Shape *model = obj->getModel();
+    if (obj->posBufCache.size() != model->posBuf.size()) {
+        obj->posBufCache.resize(model->posBuf.size());
+    }
+
+    // loop over each face
+    for (int fIdx = 0; fIdx < model->eleBuf.size() / 3; fIdx++) {
+        shared_ptr<Primitive> tri = make_shared<Primitive>();
+        tri->faceIndex = fIdx;
+        tri->obj = obj;
+
+        for (int vNum = 0; vNum < 3; vNum++) {
+            // get transformed vertex coordinates
+            unsigned int vIdx = model->eleBuf[fIdx*3+vNum];
+            for (int i = 0; i < 3; i++) {
+                tri->verts[vNum][i] = model->posBuf[vIdx*3+i];
+            }
+            tri->verts[vNum] = vec3(transform * vec4(tri->verts[vNum], 1));
+
+            // cache transformed vertex coordinates
+            for (int i = 0; i < 3; i++) {
+                obj->posBufCache[vIdx*3+i] = tri->verts[vNum][i];
+            }
+        }
+        tris.push_back(tri);
+    }
+}
+
 // KdTreeAccel Method Definitions
 std::vector<std::shared_ptr<Primitive>> gameObjectsToPrimitives(const std::list<GameObject *> &gameObjects) {
     std::vector<std::shared_ptr<Primitive>> tris;
 
     for (GameObject *obj : gameObjects) {
-        Shape *model = obj->getModel();
         mat4 transform = obj->getTransform();
-        if (obj->posBufCache.size() != model->posBuf.size()) {
-            obj->posBufCache.resize(model->posBuf.size());
-        }
-
-        // loop over each face
-        for (int fIdx = 0; fIdx < model->eleBuf.size() / 3; fIdx++) {
-            shared_ptr<Primitive> tri = make_shared<Primitive>();
-            tri->faceIndex = fIdx;
-            tri->obj = obj;
-
-            for (int vNum = 0; vNum < 3; vNum++) {
-                // get transformed vertex coordinates
-                unsigned int vIdx = model->eleBuf[fIdx*3+vNum];
-                for (int i = 0; i < 3; i++) {
-                    tri->verts[vNum][i] = model->posBuf[vIdx*3+i];
-                }
-                tri->verts[vNum] = vec3(transform * vec4(tri->verts[vNum], 1));
-
-                // cache transformed vertex coordinates
-                for (int i = 0; i < 3; i++) {
-                    obj->posBufCache[vIdx*3+i] = tri->verts[vNum][i];
-                }
+        gameObjectToPrimitives(obj, transform, tris);
+        if (dynamic_cast<Box *>(obj)) {
+            Box *box = static_cast<Box *>(obj);
+            for (Portal *portal : box->touchingPortals) {
+                mat4 boxTransform = portal->getTransformToLinkedPortal() * transform;
+                gameObjectToPrimitives(box, boxTransform, tris);
             }
-            tris.push_back(tri);
         }
     }
 
@@ -434,8 +446,7 @@ bool KdTreeAccel::Intersect(const Ray &ray, SurfaceInteraction &isect) const {
                     primitives[node->onePrimitive];
                 // Check one primitive inside leaf node
                 SurfaceInteraction newIsect;
-                newIsect.faceIndex = p->faceIndex;
-                newIsect.obj = p->obj;
+                newIsect.tri = p.get();
                 if (p->Intersect(ray, newIsect)) {
                     if (hit) {
                         if (newIsect < isect) {
@@ -454,8 +465,7 @@ bool KdTreeAccel::Intersect(const Ray &ray, SurfaceInteraction &isect) const {
                     const std::shared_ptr<Primitive> &p = primitives[index];
                     // Check one primitive inside leaf node
                     SurfaceInteraction newIsect;
-                    newIsect.faceIndex = p->faceIndex;
-                    newIsect.obj = p->obj;
+                    newIsect.tri = p.get();
                     if (p->Intersect(ray, newIsect)) {
                         if (hit) {
                             if (newIsect < isect) {

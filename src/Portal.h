@@ -24,6 +24,7 @@ public:
     bool facing(const glm::vec3 &point);
     bool pointInBounds(const glm::vec3 &point);
     bool pointInSideBounds(const glm::vec3 &point);
+    glm::mat4 getTransformToLinkedPortal() const;
 
     glm::vec4 bounds[5];
 

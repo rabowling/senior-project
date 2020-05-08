@@ -158,6 +158,8 @@ void Player::update(float dt) {
             vec3 newVel = vec3(camTransform.topMatrix() * vec4(px2glm(velocity), 0));
             velocity = glm2px(newVel);
 
+            holdTransform = inverse(camTransform.topMatrix()) * holdTransform;
+
             prevTouchingPortals = touchingPortals;
             touchingPortals.clear();
             for (Portal &portal : app.portals) {
@@ -187,6 +189,7 @@ void Player::update(float dt) {
             if (dynamic_cast<Box *>(obj)) {
                 //app.hud.updateToolTip("Pick up.");
                 if (app.controls.isPressed(Controls::USE)) {
+                    holdTransform = mat4(1);
                     heldItem = static_cast<PxRigidBody *>(hit.block.actor);
                     heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, true);
                 }
@@ -208,8 +211,9 @@ void Player::update(float dt) {
         }
     } else {
         float holdDistance = 5.f;
-        PxVec3 targetLocation = glm2px(camera.eye + holdDistance * (camera.lookAtPoint - camera.eye));
-        PxVec3 vectorToTargetLocation = targetLocation - heldItem->getGlobalPose().p;
+        vec3 targetLocation = camera.eye + holdDistance * (camera.lookAtPoint - camera.eye);
+        targetLocation = vec3(holdTransform * vec4(targetLocation, 1));
+        PxVec3 vectorToTargetLocation = glm2px(targetLocation) - heldItem->getGlobalPose().p;
         //app.hud.updateToolTip("Drop.");
 
         heldItem->addForce(vectorToTargetLocation * 10.0f - heldItem->getLinearVelocity(), PxForceMode::eVELOCITY_CHANGE, true);

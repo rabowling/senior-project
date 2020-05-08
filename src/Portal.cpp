@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Utils.h"
 #include "PortalOutline.h"
+#include "MatrixStack.h"
 #include <iostream>
 #include <glm/gtc/quaternion.hpp>
 
@@ -157,4 +158,14 @@ glm::mat4 Portal::getTransform() const {
 
 Material *Portal::getMaterial() const {
     return nullptr;
+}
+
+glm::mat4 Portal::getTransformToLinkedPortal() const {
+    MatrixStack camTransform;
+    camTransform.translate(linkedPortal->position);
+    camTransform.rotate(M_PI, linkedPortal->getUp());
+    camTransform.rotate(linkedPortal->orientation);
+    camTransform.rotate(inverse(orientation));
+    camTransform.translate(-position);
+    return camTransform.topMatrix();
 }
