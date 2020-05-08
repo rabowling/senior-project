@@ -6,18 +6,23 @@
 
 int main(int argc, char *argv[]) {
     // parse args
+    std::string levelFilename = "level1.txt";
     Controls::InputMode inputMode = Controls::NORMAL;
     std::string recordFilename;
     Application::RenderMode renderMode = Application::RENDER_OPENGL;
 
-    std::string usage = "Usage: ./SeniorProject [-r filename] [-p filename] [-t filename]\n" \
+    std::string usage = "Usage: ./SeniorProject [-l filename] [-r filename] [-p filename] [-t filename]\n" \
+        "\t-l: open level (default: level1.txt)\n"
         "\t-r: record input to file\n" \
         "\t-p: playback input from file\n" \
         "\t-t: render frames with raytracing";
 
     int opt;
-    while ((opt = getopt(argc, argv, "r:p:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "l:r:p:t:")) != -1) {
         switch (opt) {
+            case 'l':
+                levelFilename = std::string(optarg);
+                break;
             case 'r':
                 recordFilename = std::string(optarg);
                 inputMode = Controls::RECORD;
@@ -37,6 +42,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    app.run(inputMode, recordFilename, renderMode);
+    app.run(levelFilename, inputMode, recordFilename, renderMode);
     return 0;
 }

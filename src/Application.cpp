@@ -21,7 +21,7 @@ using namespace glm;
 
 Application app;
 
-void Application::run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode) {
+void Application::run(std::string levelFilename, Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode) {
     windowManager.init(1280, 720);
     physics.init();
     player.init();
@@ -36,7 +36,7 @@ void Application::run(Controls::InputMode inputMode, std::string recordFilename,
         portalLights[i].portal = NULL;
     }
 
-    loadLevel("../resources/levels/level1.txt");
+    loadLevel("../resources/levels/" + levelFilename);
     shaderManager.loadShaders("../resources/shaders");
     textureManager.loadTextures("../resources/textures");
     modelManager.loadModels("../resources/models");
@@ -472,7 +472,7 @@ void Application::initDepthmaps() {
 
 void Application::loadLevel(string levelFile) {
     ifstream in;
-    in.open("../resources/levels/level1.txt");
+    in.open(levelFile);
     string line;
     map<int, Portal *> portalIdMap;
     bool loadedPortal1 = false;

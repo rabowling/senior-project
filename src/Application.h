@@ -100,7 +100,7 @@ public:
     bool renderingCubemap = false;
     bool renderingFP = false;
 
-    void run(Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
+    void run(std::string levelFilename, Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
 private:
     void update(float dt);
     void render(float dt);
