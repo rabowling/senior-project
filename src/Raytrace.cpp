@@ -45,7 +45,7 @@ bool checkShadow(const glm::vec3 pos, const glm::vec3 lightPos, const KdTreeAcce
 }
 
 bool checkShadowThroughPortal(const glm::vec3 pos, const glm::vec3 &lightPos, Portal &portal, const KdTreeAccel &kdtree, glm::vec3 &transformedLightPos) {
-    if (!(portal.facing(pos) && portal.linkedPortal->facing(lightPos))) {
+    if (!portal.open || !portal.linkedPortal->open || !portal.facing(pos) || !portal.linkedPortal->facing(lightPos)) {
         return true;
     }
 
@@ -233,6 +233,14 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
     }
     else if (dynamic_cast<Portal *>(hit.tri->obj)) {
         Portal *portal = static_cast<Portal *>(hit.tri->obj);
+        if (!portal->open || !portal->linkedPortal->open) {
+            if (portal->hasOutline) {
+                return portal->outline->color * 255.f;
+            }
+            else {
+                return vec3(0);
+            }
+        }
 
         MatrixStack camTransform;
         camTransform.translate(portal->linkedPortal->position);

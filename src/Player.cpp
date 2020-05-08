@@ -67,6 +67,8 @@ void Player::init() {
     portals[1] = &(*it);
     portals[0] = &(*next(it));
     portals[0]->linkPortal(portals[1]);
+    portals[0]->open = false;
+    portals[1]->open = false;
 
     portals[0]->setOutline(new PortalOutline(vec3(0, 0, 1), "portal_outline"));
     portals[1]->setOutline(new PortalOutline(vec3(1, 0.5, 0), "portal_outline"));
@@ -243,6 +245,7 @@ void Player::update(float dt) {
             quat newRot = quatLookAt(px2glm(hit.block.normal), portalUp)
                 * angleAxis((float) M_PI_2, cross(portal->localForward, portal->localUp));
             portal->setPosition(newPos, newRot);
+            portal->open = true;
 
             PortalLight &curLight = (app.controls.isPressed(Controls::PRIMARY_FIRE)) ? app.portalLights[BLUE_PORTAL] : app.portalLights[ORANGE_PORTAL];
             curLight.direction = portal->getForward();

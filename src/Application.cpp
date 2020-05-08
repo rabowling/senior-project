@@ -178,7 +178,7 @@ void Application::render(float dt) {
     glPolygonOffset(-1.0, -1.0);
     int i = 1;
     for (Portal &portal : portals) {
-        if (!portal.facing(player.camera.eye)) {
+        if (!portal.linkedPortal->open || !portal.open || !portal.facing(player.camera.eye)) {
             continue;
         }
 
@@ -192,7 +192,7 @@ void Application::render(float dt) {
 
     i = 1;
     for (Portal &portal : portals) {
-        if (!portal.facing(player.camera.eye)) {
+        if (!portal.open || !portal.facing(player.camera.eye)) {
             continue;
         }
 
@@ -208,7 +208,7 @@ void Application::render(float dt) {
     // Render scene through portals
     i = 1;
     for (Portal &portal : portals) {
-        if (!portal.facing(player.camera.eye)) {
+        if (!portal.linkedPortal->open || !portal.open || !portal.facing(player.camera.eye)) {
             continue;
         }
 
