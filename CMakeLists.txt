@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 
 # Set default build type
 if(NOT CMAKE_BUILD_TYPE)
-    SET(CMAKE_BUILD_TYPE Debug)
+    SET(CMAKE_BUILD_TYPE Release)
 endif()
 
 # Name of the project
