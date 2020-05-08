@@ -10,11 +10,36 @@
 #include <iostream>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/intersect.hpp>
 
 using namespace glm;
 using namespace std;
 
-glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
+const int NUM_BOUNCES = 1;
+const int NUM_BOUNCE_RAYS = 16;
+const int LIGHT_RADIUS = 2;
+const int NUM_SHADOW_SAMPLES_X = 1;
+const int NUM_SHADOW_SAMPLES_Y = 1;
+
+glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
+    vec3 dir = normalize(vec3(rand() % 2000 - 1000, rand() % 2000 - 1000, rand() % 2000 - 1000));
+    if (dot(dir, normal) < 0) {
+        dir = -dir;
+    }
+    return dir;
+}
+
+bool fastCheckPortal(const glm::vec3 &orig, const glm::vec3 &dir, Portal &portal) {
+    float d;
+    if (glm::intersectRayPlane(orig, dir, portal.position, portal.getForward(), d)) {
+        vec3 hitPos = orig + dir * d;
+        return portal.pointInSideBounds(hitPos);
+    }
+    return false;
+}
+
+glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth = 0) {
     SurfaceInteraction hit;
     if (!kdtree.Intersect(ray, hit)) {
         return vec3(0, 0, 0);
@@ -37,6 +62,7 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
     }
 
     vec3 hitPos = hit.u * vert[1] + hit.v * vert[2] + (1 - hit.u - hit.v) * vert[0];
+    vec3 hitNorm = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
 
     Material *material = hit.obj->getMaterial();
     if (material) {
@@ -100,22 +126,39 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
         }
 
         vec3 color(0);
-        vec3 normal = normalize(cross(vert[1] - vert[0], vert[2] - vert[0]));
         for (const Light &light : app.lights) {
             // Blinn-Phong shading
             vec3 ambient = material->amb * texColor * light.intensity;
-            color += ambient;
+            //color += ambient;
 
             // Shadow rays
             SurfaceInteraction shadowRayHit;
-            Ray shadowRay(hitPos, normalize(light.position - hitPos), distance(light.position, hitPos));
-            if (!kdtree.IntersectP(shadowRay)) {
-                vec3 lightDir = normalize(light.position - hitPos);
-                vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
-                vec3 H = normalize((lightDir - ray.d) / 2.f);
-                vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
-                color += diffuse + specular;
+            vec3 lightForward = normalize(hitPos - light.position);
+            vec3 lightRight = cross(vec3(0, 1, 0), lightForward);
+            vec3 lightUp = cross(lightForward, lightRight);
+            vec3 directLight(0);
+            for (int x = 0; x < NUM_SHADOW_SAMPLES_X; x++) {
+                for (int y = 0; y < NUM_SHADOW_SAMPLES_Y; y++) {
+                    float offsetX = 0;
+                    float offsetY = 0;
+                    if (NUM_SHADOW_SAMPLES_X * NUM_SHADOW_SAMPLES_Y > 1) {
+                        offsetX = (x - NUM_SHADOW_SAMPLES_X / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_X * LIGHT_RADIUS;
+                        offsetY = (y - NUM_SHADOW_SAMPLES_Y / 2.f + 0.5f + (0.5f * rand() / (float) RAND_MAX - 0.25f)) / NUM_SHADOW_SAMPLES_Y * LIGHT_RADIUS;
+                    }
+
+                    vec3 samplePos = light.position + lightRight * offsetX + lightUp * offsetY;
+
+                    vec3 lightDir = normalize(samplePos - hitPos);
+                    Ray shadowRay(hitPos, lightDir, distance(samplePos, hitPos));
+                    if (!kdtree.IntersectP(shadowRay)) {
+                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
+                        vec3 H = normalize((lightDir - ray.d) / 2.f);
+                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
+                        directLight += diffuse + specular;
+                    }
+                }
             }
+            color += directLight / (float) (NUM_SHADOW_SAMPLES_X * NUM_SHADOW_SAMPLES_Y);
 
             // Check for light through portals
             for (Portal &portal : app.portals) {
@@ -131,8 +174,10 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
                 camTransform2.translate(-portal.linkedPortal->position);
 
                 vec3 newLightPos = vec3(camTransform2.topMatrix() * vec4(light.position, 1));
-                Ray portalRay(hitPos, normalize(newLightPos - hitPos));
-                if (kdtree.Intersect(portalRay, shadowRayHit)
+                vec3 lightDir = normalize(newLightPos - hitPos);
+                Ray portalRay(hitPos, lightDir);
+                if (fastCheckPortal(hitPos, lightDir, portal)
+                        && kdtree.Intersect(portalRay, shadowRayHit)
                         && shadowRayHit.obj == &portal) {
                     vec3 vert2[3];
                     Shape *model2 = shadowRayHit.obj->getModel();
@@ -155,17 +200,26 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
                     vec3 shadowOrig = vec3(camTransform.topMatrix() * vec4(shadowHitPos, 1));
                     vec3 shadowDir = normalize(shadowOrig - shadowEye);
                     float d = distance(light.position, shadowOrig);
-                    Ray portalShadowRay(shadowOrig, shadowDir, d);
-                    if (!kdtree.IntersectP(portalShadowRay)) {
-                        vec3 lightDir = normalize(newLightPos - hitPos);
-                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(normal, lightDir)) * light.intensity;
+                    Ray shadowRay(shadowOrig, shadowDir, d);
+                    if (!kdtree.IntersectP(shadowRay)) {
+                        vec3 diffuse = material->dif * texColor * std::max(0.f, dot(hitNorm, lightDir)) * light.intensity;
                         vec3 H = normalize((lightDir - ray.d) / 2.f);
-                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, normal)), material->shine) * light.intensity * 255.f;
+                        vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
                         color = color + diffuse + specular;
                     }
                 }
             }
 
+        }
+
+        if (bounceDepth < NUM_BOUNCES) {
+            vec3 indirectLight(0);
+            for (int i = 0; i < NUM_BOUNCE_RAYS / pow(2, bounceDepth); i++) {
+                vec3 dir = randomDirInSphere(hitNorm);
+                Ray bounceRay(hitPos, dir);
+                indirectLight += traceColor(bounceRay, kdtree, bounceDepth + 1);
+            }
+            color += indirectLight * texColor / 255.f / (float) NUM_BOUNCE_RAYS;
         }
 
         return color;
@@ -184,7 +238,7 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree) {
         vec3 newOrig = vec3(camTransform.topMatrix() * vec4(hitPos, 1));
         vec3 newDir = normalize(newOrig - newEye);
         Ray portalRay(newOrig, newDir);
-        return traceColor(portalRay, kdtree);
+        return traceColor(portalRay, kdtree, bounceDepth);
     }
     else if (dynamic_cast<PortalOutline *>(hit.obj)) {
         return static_cast<PortalOutline *>(hit.obj)->color * 255.f;

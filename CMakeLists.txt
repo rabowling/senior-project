@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 
 # Set default build type
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
+    SET(CMAKE_BUILD_TYPE Debug)
 endif()
 
 # Name of the project
@@ -33,6 +33,12 @@ if (PHYSX_DIR)
 else()
     message(FATAL_ERROR "PhysX not found")
 endif()
+
+# Include freetype
+find_package(Freetype REQUIRED)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+
+SET(CMAKE_EXE_LINKER_FLAGS "-v")
 
 # Add required frameworks for GLFW.
 set(GLFW_DIR "$ENV{GLFW_DIR}")
@@ -68,6 +74,7 @@ add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS})
 # Link libraries
 target_link_libraries(${CMAKE_PROJECT_NAME} PhysXCharacterKinematic_static_64 PhysX_static_64 PhysXCommon_static_64 PhysXFoundation_static_64 PhysXExtensions_static_64 PhysXCooking_static_64 PhysXPvdSDK_static_64 PhysXVehicle_static_64)
 target_link_libraries(${CMAKE_PROJECT_NAME} glfw ${GLFW_LIBRARIES})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${FREETYPE_LIBRARIES})
 
 # Set up OpenMP
 find_package(OpenMP)

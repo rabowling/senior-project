@@ -17,6 +17,8 @@ void Box::init(physx::PxVec3 location, physx::PxVec3 scale, physx::PxQuat rotati
 
     body->userData = this;
     this->scale = px2glm(scale);
+    startPos = location;
+    startRot = rotation;
 }
 
 void Box::draw(MatrixStack &M) {
@@ -79,6 +81,11 @@ void Box::update(float dt) {
             }
             break;
         }
+    }
+
+    if (body->getGlobalPose().p.y < -50) {
+        body->setLinearVelocity(PxVec3(0,0,0));
+        body->setGlobalPose(PxTransform(startPos, startRot));
     }
 }
 

@@ -21,6 +21,7 @@ class Player : public physx::PxUserControllerHitReport
 
         Camera camera;
         Portal *portals[2] = { nullptr, nullptr };
+        glm::vec3 startPos;
         
     private:
         physx::PxController *mController;
@@ -30,12 +31,12 @@ class Player : public physx::PxUserControllerHitReport
         physx::PxVec3 velocity;
         float mWalkSpeed = 5.0f;
         physx::PxRigidBody *heldItem = NULL;
-        float jumpSpeed = 10;
+        float jumpSpeed = 7;
         float radius = 1;
         float height = 2;
         glm::vec3 camOffset = glm::vec3(0, 1, 0);
         
-        enum RaycastMode { PICK_UP, FIRE_PORTAL };
+        enum RaycastMode { USE, FIRE_PORTAL };
         RaycastMode raycastMode;
 
         std::vector<Portal *> touchingPortals;

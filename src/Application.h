@@ -16,6 +16,8 @@
 #include "Box.h"
 #include "Button.h"
 #include "PortalOutline.h"
+#include "LightSwitch.h"
+#include "HUD.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -24,8 +26,8 @@
 
 /* 2 player controlled portals, 2 world portals. */
 #define NUM_PORTALS 4
-#define ORANGE_PORTAL 1
-#define BLUE_PORTAL 0
+#define ORANGE_PORTAL 0
+#define BLUE_PORTAL 1
 #define WORLD_PORTAL_1 2
 #define WORLD_PORTAL_2 3
 
@@ -40,6 +42,7 @@ const unsigned int SHADOW_HEIGHT = 1024;
 struct Light {
     glm::vec3 position;
     glm::vec3 intensity;
+    int id;
 };
 
 /* Used for real-time portal lighting */
@@ -63,6 +66,8 @@ public:
     Player player;
     Controls controls;
 
+    int width, height;
+
     int stepCount = 0;
     
     float physicsStep;
@@ -72,7 +77,9 @@ public:
     std::list<Box> boxes;
     std::list<Button> buttons;
     std::list<Wall> walls;
+    std::list<LightSwitch> switches;
     std::list<GameObject *> gameObjects;
+    HUD hud;
 
     unsigned int depthCubemap;
     unsigned int depthMapFBO[NUM_PORTALS + 1];
@@ -80,9 +87,12 @@ public:
     unsigned int units[NUM_PORTALS] = {5, 6, 7, 8};
     std::vector<Light> lights;
     glm::vec3 lightPos;
+    Light currentLight;
     PortalLight portalLights[NUM_PORTALS];
     //glm::mat4 LP = glm::ortho(-100.0, 100.0, -100.0, 100.0, 0.1, 100.0);
     glm::mat4 LP;
+
+    glm::mat4 orthoProjection;
 
     float near = 1.0f;
     float far = 100.0f;
