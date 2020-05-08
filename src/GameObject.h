@@ -16,6 +16,7 @@ public:
 
     // cache transformed geometry to speed up raytracing
     virtual void cacheGeometry();
+    virtual bool intersect(const glm::vec3 &orig, const glm::vec3 &dir, float &u, float &v, float &d, unsigned int &faceIndex) const;
     std::vector<float> posBufCache;
     int cacheFrame = -1;
 };

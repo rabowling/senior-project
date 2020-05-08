@@ -4,7 +4,8 @@
 #include "Application.h"
 #include "GameObject.h"
 #include "Material.h"
-#include "KDTree.h"
+#include "BVH.h"
+#include "Ray.h"
 #include <list>
 #include <fstream>
 #include <iostream>
@@ -16,7 +17,7 @@
 using namespace glm;
 using namespace std;
 
-const int NUM_BOUNCES = 1;
+const int NUM_BOUNCES = 0;
 const int NUM_BOUNCE_RAYS = 16;
 const int LIGHT_RADIUS = 2;
 const int NUM_SHADOW_SAMPLES_X = 1;
@@ -39,7 +40,7 @@ bool fastCheckPortal(const glm::vec3 &orig, const glm::vec3 &dir, Portal &portal
     return false;
 }
 
-glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<KDNode> &kdtree, int bounceDepth) {
+glm::vec3 traceColor(const glm::vec3 &orig, const glm::vec3 &dir, const std::unique_ptr<BVH> &kdtree, int bounceDepth) {
     RayHit hit;
     if (!kdtree->intersect(orig, dir, hit)) {
         return vec3(0, 0, 0);
@@ -252,7 +253,10 @@ void renderRT(int width, int height, const std::string &filename) {
     float angle = tan(M_PI * 0.5 * fov / 180);
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
 
-    unique_ptr<KDNode> kdtree = KDNode::build(app.gameObjects);
+    for (auto &obj : app.gameObjects) {
+        obj->cacheGeometry();
+    }
+    unique_ptr<BVH> kdtree = make_unique<BVH>(app.gameObjects);
 
     #pragma omp parallel for collapse(2)
     for (int y = 0; y < height; y++) {
