@@ -62,6 +62,9 @@ def serialize_object(collection, obj):
     elif collection == "LightSwitches":
         return ('lightswitch {light} {t.x} {t.y} {t.z}'
             .format(light = obj["light"], t = m.to_translation()))
+    elif collection == "Trophy":
+        return ('trophy {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
+            .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     else:
         return None
 

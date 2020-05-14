@@ -14,6 +14,7 @@ class Player : public physx::PxUserControllerHitReport
         void init();
         void setPosition(float x, float y, float z);
         void draw(MatrixStack &M);
+        void resetLevel();
         
         virtual void onShapeHit(const physx::PxControllerShapeHit &hit);
         virtual void onControllerHit(const physx::PxControllersHit &hit) {}

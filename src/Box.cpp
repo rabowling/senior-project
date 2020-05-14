@@ -98,9 +98,13 @@ void Box::update(float dt) {
     }
 
     if (body->getGlobalPose().p.y < -50) {
-        body->setLinearVelocity(PxVec3(0,0,0));
-        body->setGlobalPose(PxTransform(startPos, startRot));
+        respawn();
     }
+}
+
+void Box::respawn() {
+    body->setLinearVelocity(PxVec3(0,0,0));
+    body->setGlobalPose(PxTransform(startPos, startRot));
 }
 
 void Box::onContactModify(const physx::PxRigidActor *actor, physx::PxContactSet &contacts) {

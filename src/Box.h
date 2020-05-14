@@ -13,6 +13,7 @@ public:
     void init(physx::PxVec3 location, physx::PxVec3 scale, physx::PxQuat rotation);
     void draw(MatrixStack &M);
     void update(float dt);
+    void respawn();
     virtual void onContactModify(const physx::PxRigidActor *actor, physx::PxContactSet &contacts);
     float density = 10.0f;
     physx::PxRigidDynamic *body;

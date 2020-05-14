@@ -57,6 +57,22 @@ void MaterialManager::loadMaterials() {
         /* amb */   vec3(0.01, 0.01, 0.01),
         /* shine */ 128
     );
+
+    materials["trophy"] = Material(
+        "TrophyTexture",
+        /* spec */  vec3(0.1, 0.1, 0.1),
+        /* dif */   vec3(1, 1, 1),
+        /* amb */   vec3(0.01, 0.01, 0.01),
+        /* shine */ 128
+    );
+
+    materials["trophy2"] = Material(
+        "TrophyTexture2",
+        /* spec */  vec3(0.1, 0.1, 0.1),
+        /* dif */   vec3(1, 1, 1),
+        /* amb */   vec3(0.01, 0.01, 0.01),
+        /* shine */ 128
+    );
 }
 
 void MaterialManager::bind(std::string materialName) {

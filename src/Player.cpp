@@ -128,7 +128,8 @@ void Player::update(float dt) {
     mController->move(displacement, 0.01f, dt, moveFilter, NULL);
 
     if (mController->getPosition().y <= -50) {
-        setPosition(startPos.x, startPos.y, startPos.z);
+        cout << "respawn player" << endl;
+        resetLevel();
     }
     
     // keep track of portals that player is touching
@@ -257,6 +258,14 @@ void Player::update(float dt) {
 
             portal->surface = hit.block.actor;
         }
+    }
+}
+
+void Player::resetLevel() {
+    setPosition(startPos.x, startPos.y, startPos.z);
+    app.currentLight = app.lights[0];
+    for (Box b : app.boxes) {
+        b.respawn();
     }
 }
 

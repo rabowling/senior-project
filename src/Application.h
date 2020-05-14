@@ -17,6 +17,7 @@
 #include "Button.h"
 #include "PortalOutline.h"
 #include "LightSwitch.h"
+#include "MiscItem.h"
 #include "HUD.h"
 #include <string>
 #include <vector>
@@ -78,6 +79,7 @@ public:
     std::list<Button> buttons;
     std::list<Wall> walls;
     std::list<LightSwitch> switches;
+    std::list<MiscItem> miscItems;
     std::list<GameObject *> gameObjects;
     HUD hud;
 

@@ -361,6 +361,10 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
         lswitch.draw(M);
     }
 
+    for (MiscItem &miscItem : miscItems) {
+        miscItem.draw(M);
+    }
+
     if (!renderingFP) {
         player.draw(M);
     }
@@ -587,6 +591,17 @@ void Application::loadLevel(string levelFile) {
             PxVec3 pos(data[0], data[1], data[2]);
             switches.push_back(LightSwitch());
             switches.rbegin()->init(pos, linkedLightId);
+        } else if (type == "trophy") {
+            float data[10];
+            for (int i = 0; i < 10; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            PxVec3 pos(data[0], data[1], data[2]);
+            PxVec3 scale(data[3], data[4], data[5]);
+            PxQuat rot(data[6], data[7], data[8], data[9]);
+            miscItems.push_back(MiscItem());
+            miscItems.rbegin()->init(pos, scale, rot, "trophy2", "trophy2");
         }
     }
     in.close();
