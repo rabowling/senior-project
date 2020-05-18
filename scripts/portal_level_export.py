@@ -46,13 +46,14 @@ def serialize_object(collection, obj):
         return ('wall {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
             .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     elif collection == 'Buttons':
-        return ('button {t.x} {t.y} {t.z}'
-            .format(t = m.to_translation()))
+        return ('button {id} {t.x} {t.y} {t.z}'
+            .format(id = obj["id"], t = m.to_translation()))
     elif collection == 'Boxes':
         return ('box {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
             .format(t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     elif collection == 'Doors':
-        pass
+        return ('door {id} {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.x} {r.y} {r.z} {r.w}'
+            .format(id = obj["id"], t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))
     elif collection == 'Portals':
         return ('portal {id} {link} {t.x} {t.y} {t.z} {s.x} {s.y} {s.z} {r.w} {r.x} {r.y} {r.z}'
             .format(id = obj["id"], link = obj["link"], t = m.to_translation(), s = m.to_scale(), r = m.to_quaternion()))

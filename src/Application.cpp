@@ -12,6 +12,7 @@
 #include "GLSL.h"
 #include "Raytrace.h"
 #include "Utils.h"
+#include "Door.h"
 
 using namespace physx;
 using namespace std;
@@ -111,6 +112,9 @@ void Application::update(float dt) {
     updatePortalLights();
     for (Box &box : app.boxes) {
         box.update(dt);
+    }
+    for (Door &door : app.doors) {
+        door.update(dt);
     }
     physics.getScene()->simulate(dt);
     physics.getScene()->fetchResults(true);
@@ -403,6 +407,9 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
     for (Wall &wall : walls) {
         wall.draw(M);
     }
+    for (Door &door : doors) {
+        door.draw(M);
+    }
 }
 
 void Application::initCubemap() {
@@ -480,6 +487,7 @@ void Application::loadLevel(string levelFile) {
     in.open(levelFile);
     string line;
     map<int, Portal *> portalIdMap;
+    map<int, Button *> buttonIdMap;
     bool loadedPortal1 = false;
     while (getline(in, line)) {
         istringstream iss(line);
@@ -557,6 +565,8 @@ void Application::loadLevel(string levelFile) {
         }
         else if (type == "button") {
             float data[3];
+            int intData;
+            iss >> intData;
             for (int i = 0; i < 3; i++) {
                 iss >> data[i];
                 iss.ignore();
@@ -564,6 +574,8 @@ void Application::loadLevel(string levelFile) {
             PxVec3 pos(data[0], data[1], data[2]);
             buttons.push_back(Button());
             buttons.rbegin()->init(pos);
+            int buttonId = intData;
+            buttonIdMap[buttonId] = &buttons.back();
         }
         else if (type == "light") {
             float data[6];
@@ -602,6 +614,23 @@ void Application::loadLevel(string levelFile) {
             PxQuat rot(data[6], data[7], data[8], data[9]);
             miscItems.push_back(MiscItem());
             miscItems.rbegin()->init(pos, scale, rot, "trophy2", "trophy2");
+        } else if (type == "door") {
+            float data[10];
+            int intData;
+            iss >> intData;
+            for (int i = 0; i < 10; i++) {
+                iss >> data[i];
+                iss.ignore();
+            }
+            PxVec3 pos(data[0], data[1], data[2]);
+            PxVec3 scale(data[3], data[4], data[5]);
+            PxQuat rot(data[6], data[7], data[8], data[9]);
+            doors.push_back(Door());
+            doors.rbegin()->init(pos, scale, rot);
+            int linkedButtonId = intData;
+            if (buttonIdMap.find(linkedButtonId) != buttonIdMap.end()) {
+                doors.rbegin()->linkButton(buttonIdMap[linkedButtonId]);
+            }
         }
     }
     in.close();
@@ -627,5 +656,9 @@ void Application::loadLevel(string levelFile) {
         if (portal.hasOutline) {
             gameObjects.push_back(portal.outline);
         }
+    }
+
+    for (Door &door : doors) {
+        gameObjects.push_back(&door);
     }
 }

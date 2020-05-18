@@ -5,11 +5,15 @@
 #include "Utils.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Door.h"
 
 using namespace physx;
 
 void Button::onContact(PxActor *other) {
     pressed = true;
+    if (linkedDoor != nullptr) {
+        linkedDoor->open();
+    }
 }
 
 void Button::init(physx::PxVec3 location) {

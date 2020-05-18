@@ -80,6 +80,7 @@ public:
     std::list<Wall> walls;
     std::list<LightSwitch> switches;
     std::list<MiscItem> miscItems;
+    std::list<Door> doors;
     std::list<GameObject *> gameObjects;
     HUD hud;
 

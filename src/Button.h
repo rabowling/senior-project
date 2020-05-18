@@ -4,6 +4,7 @@
 #include "MatrixStack.h"
 #include "GameObject.h"
 
+class Door;
 class Button : public GameObject
 {
 public:
@@ -15,4 +16,5 @@ public:
     virtual Shape *getModel() const;
     virtual glm::mat4 getTransform() const;
     virtual Material *getMaterial() const;
+    Door *linkedDoor = nullptr;
 };
