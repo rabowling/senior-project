@@ -68,6 +68,12 @@ else()
     message(FATAL_ERROR "GLM not found")
 endif()
 
+# Add option to build for distribution
+option(BUILD_DISTRIBUTE "Build for distribution" OFF)
+if (BUILD_DISTRIBUTE)
+    add_compile_definitions(BUILD_DISTRIBUTE)
+endif()
+
 # Set the executable.
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS})
 

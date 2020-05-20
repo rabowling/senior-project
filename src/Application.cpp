@@ -38,10 +38,16 @@ void Application::run(std::string levelFilename, Controls::InputMode inputMode, 
         portalLights[i].portal = NULL;
     }
 
-    loadLevel("../resources/levels/" + levelFilename);
-    shaderManager.loadShaders("../resources/shaders");
-    textureManager.loadTextures("../resources/textures");
-    modelManager.loadModels("../resources/models");
+#ifdef BUILD_DISTRIBUTE
+    string resourceDir = "resources/";
+#else
+    string resourceDir = "../resources/";
+#endif
+
+    loadLevel(resourceDir + "levels/" + levelFilename);
+    shaderManager.loadShaders(resourceDir + "shaders");
+    textureManager.loadTextures(resourceDir + "textures");
+    modelManager.loadModels(resourceDir + "models");
     materialManager.loadMaterials();
 
     orthoProjection = ortho(0.0f, (float)width, 0.0f, float(height));
