@@ -102,6 +102,7 @@ public:
     float lightSpeed = 5.0f;
     bool renderingCubemap = false;
     bool renderingFP = false;
+    int numSamplesShadows = 1;
 
     void run(std::string levelFilename, Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode);
 private:

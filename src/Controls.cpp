@@ -76,6 +76,12 @@ void Controls::update() {
         if (glfwGetKey(handle, GLFW_KEY_P) == GLFW_PRESS) {
             handleEvent(DEBUG_LIGHT);
         }
+        if (glfwGetKey(handle, GLFW_KEY_PERIOD) == GLFW_PRESS) {
+            handleEvent(SHADOW_QUALITY_UP);
+        }
+        if (glfwGetKey(handle, GLFW_KEY_COMMA) == GLFW_PRESS) {
+            handleEvent(SHADOW_QUALITY_DOWN);
+        }
 
         for (InputEvent e : prevHeld) {
             if (held.find(e) == held.end()) {

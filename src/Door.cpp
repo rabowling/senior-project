@@ -31,7 +31,7 @@ void Door::draw(MatrixStack &M) {
     glUniformMatrix4fv(app.shaderManager.getUniform("M"), 1, GL_FALSE, value_ptr(getTransform()));
     if (!app.renderingCubemap) {
         glUniform3f(app.shaderManager.getUniform("scale"), size.x, size.y, size.z);
-        app.materialManager.bind("buttonDown");
+        app.materialManager.bind("door");
     }
     app.modelManager.draw("cube");
     M.popMatrix();

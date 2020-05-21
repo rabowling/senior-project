@@ -21,6 +21,7 @@ uniform PortalLight portalLights[4];
 uniform vec3 pointLightPos;
 uniform vec3 dirLightColor;
 uniform vec3 viewPos;
+uniform int numSamples;
 
 uniform samplerCube depthMapPointLight;
 
@@ -57,6 +58,16 @@ float PortalShadowCalculation(vec4 pos, vec3 lightDir, int index) {
 
 float ShadowCalculation(vec3 pos, vec3 lightPos, int index)
 {
+    vec3 sampleOffsetDirections[21] = vec3[]
+    (
+        vec3( 0,  0,  0), vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), 
+        vec3(-1,  1,  1), vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), 
+        vec3(-1,  1, -1), vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), 
+        vec3(-1,  1,  0), vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), 
+        vec3(-1,  0, -1), vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), 
+        vec3( 0,  1, -1)
+    ); 
+
 	// get vector between fragment position and light position
     vec3 fragToLight = pos - lightPos;
     // use the light to fragment vector to sample from the depth map 
@@ -66,8 +77,19 @@ float ShadowCalculation(vec3 pos, vec3 lightPos, int index)
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
-    float bias = 0;//max(0.0005 * (1.0 - dot(fragNor, normalize(fragToLight))), 0.00001); 
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    float bias = 0;//max(0.0005 * (1.0 - dot(fragNor, normalize(fragToLight))), 0.00001);
+
+    float viewDistance = length(viewPos - fragPos);
+	float diskRadius = (1.0 + (viewDistance / farPlane)) / 25.0;
+    float shadow = 0.0;
+    for(int i = 0; i < numSamples; i++) {
+    	float closestDepth = texture(depthMapPointLight, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+    	closestDepth *= farPlane;   // Undo mapping [0;1]
+    	if(currentDepth - bias > closestDepth) {
+        	shadow += 1.0;
+        }
+	}
+	shadow /= float(numSamples);
 
     return shadow;
 }

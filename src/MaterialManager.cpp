@@ -73,6 +73,14 @@ void MaterialManager::loadMaterials() {
         /* amb */   vec3(0.01, 0.01, 0.01),
         /* shine */ 128
     );
+
+    materials["door"] = Material(
+        "metal2",
+        /* spec */  vec3(0.8, 0.8, 0.8),
+        /* dif */   vec3(0.50754, 0.50754, 0.50754),
+        /* amb */   vec3(0.019225, 0.019225, 0.019225),
+        /* shine */ 128
+    );
 }
 
 void MaterialManager::bind(std::string materialName) {

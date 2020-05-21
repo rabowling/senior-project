@@ -118,6 +118,18 @@ void Application::update(float dt) {
     }
     physics.getScene()->simulate(dt);
     physics.getScene()->fetchResults(true);
+    if (controls.isPressed(Controls::SHADOW_QUALITY_UP)) {
+        numSamplesShadows += 1;
+        if (numSamplesShadows > 21) {
+            numSamplesShadows = 21;
+        }
+    }
+    if (controls.isPressed(Controls::SHADOW_QUALITY_DOWN)) {
+        numSamplesShadows -= 1;
+        if (numSamplesShadows < 1) {
+            numSamplesShadows = 1;
+        }
+    }
 }
 
 void Application::render(float dt) {
@@ -341,6 +353,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
                          vec3(0, 1, 0));
             glUniformMatrix4fv(shaderManager.getUniform("LS[" + to_string(i) + "]"), 1, GL_FALSE, value_ptr(LP*LV));
         }
+        glUniform1i(shaderManager.getUniform("numSamples"), numSamplesShadows);
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3fv(shaderManager.getUniform("dirLightColor"), 1, glm::value_ptr(currentLight.intensity));
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
@@ -392,6 +405,7 @@ void Application::drawScene(const mat4 &P, const mat4 &V, const Camera &camera) 
                          vec3(0, 1, 0));
             glUniformMatrix4fv(shaderManager.getUniform("LS[" + to_string(i) + "]"), 1, GL_FALSE, value_ptr(LP*LV));
         }
+        glUniform1i(shaderManager.getUniform("numSamples"), numSamplesShadows);
         glUniform3fv(shaderManager.getUniform("dirLightColor"), 1, glm::value_ptr(currentLight.intensity));
         glUniform1f(shaderManager.getUniform("farPlane"), far);
         glUniform3fv(shaderManager.getUniform("viewPos"), 1, glm::value_ptr(camera.eye));
