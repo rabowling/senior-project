@@ -2,7 +2,11 @@
 #include "Controls.h"
 #include <string>
 #include <iostream>
+#ifdef _WIN32
+#include <getopt.h>
+#else
 #include <unistd.h>
+#endif
 
 int main(int argc, char *argv[]) {
     // parse args

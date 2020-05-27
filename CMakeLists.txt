@@ -15,10 +15,18 @@ file(GLOB_RECURSE SOURCES "src/*.cpp" "ext/**.cpp" "ext/**.c")
 # nice to have them show up in IDEs.
 file(GLOB_RECURSE HEADERS "src/*.h" "ext/**.h")
 include_directories(SYSTEM "ext/glad/include" "ext/tiny_obj_loader" "ext/stb_image")
+if (WIN32)
+	include_directories(SYSTEM "ext/getopt" "ext/dirent")
+endif()
+
 
 # OS specific options and libraries
 # Enable all pedantic warnings.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -pedantic")
+if (WIN32)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /w34716 /MT")
+else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -pedantic")
+endif()
 
 # Add required frameworks for PhysX.
 set(PHYSX_DIR "$ENV{PHYSX_DIR}")
@@ -27,8 +35,10 @@ if (PHYSX_DIR)
     include_directories(SYSTEM "${PHYSX_DIR}/physx/include" "${PHYSX_DIR}/pxshared/include")
     if (APPLE)
         link_directories("${PHYSX_DIR}/physx/bin/mac.x86_64/release")
-    else()
+    elseif (UNIX)
         link_directories("${PHYSX_DIR}/physx/bin/linux.clang/release")
+	elseif (WIN32)
+		link_directories("${PHYSX_DIR}/physx/bin/win.x86_64.vc142.mt/release")
     endif()
 else()
     message(FATAL_ERROR "PhysX not found")
@@ -66,6 +76,11 @@ endif()
 option(BUILD_DISTRIBUTE "Build for distribution" OFF)
 if (BUILD_DISTRIBUTE)
     add_compile_definitions(BUILD_DISTRIBUTE)
+endif()
+
+# Other compile definitions
+if (WIN32)
+	add_compile_definitions(PX_PHYSX_STATIC_LIB _USE_MATH_DEFINES)
 endif()
 
 # Set the executable.

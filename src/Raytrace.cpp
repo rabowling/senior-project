@@ -8,6 +8,7 @@
 #include <list>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 #define GLM_ENABLE_EXPERIMENTAL
