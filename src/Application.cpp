@@ -51,7 +51,6 @@ void Application::run(std::string levelFilename, Controls::InputMode inputMode, 
     materialManager.loadMaterials();
 
     orthoProjection = ortho(0.0f, (float)width, 0.0f, float(height));
-    //hud.init();
 
     initCubemap();
     initDepthmaps();
@@ -252,8 +251,6 @@ void Application::render(float dt) {
         }
         glDisable(GL_POLYGON_OFFSET_FILL);
     }
-
-    //hud.draw();
 }
 
 void Application::renderToDepthmap(const mat4 &P, const mat4 &V, const Camera &camera, string shader) {

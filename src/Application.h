@@ -18,7 +18,6 @@
 #include "PortalOutline.h"
 #include "LightSwitch.h"
 #include "MiscItem.h"
-#include "HUD.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -82,7 +81,6 @@ public:
     std::list<MiscItem> miscItems;
     std::list<Door> doors;
     std::list<GameObject *> gameObjects;
-    HUD hud;
 
     unsigned int depthCubemap;
     unsigned int depthMapFBO[NUM_PORTALS + 1];

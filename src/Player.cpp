@@ -181,7 +181,7 @@ void Player::update(float dt) {
 
     // Perform raycast
     PxRaycastBuffer hit;
-    PxReal maxDist = 50.0;
+    PxReal maxDist = 10.0;
     raycastMode = USE;
 
     if (!heldItem) {
@@ -262,6 +262,10 @@ void Player::update(float dt) {
 }
 
 void Player::resetLevel() {
+    if (heldItem) {
+        heldItem->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, false);
+        heldItem = NULL;
+    }
     setPosition(startPos.x, startPos.y, startPos.z);
     app.currentLight = app.lights[0];
     for (Box b : app.boxes) {
