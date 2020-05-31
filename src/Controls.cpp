@@ -7,6 +7,8 @@
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <ctime>
+#include <string>
 
 using namespace std;
 
@@ -128,9 +130,17 @@ void Controls::update() {
         glfwSetWindowShouldClose(handle, true);
     }
     if (glfwGetKey(handle, GLFW_KEY_RIGHT_BRACKET) == GLFW_PRESS) {
+        app.settings.reload();
+        int width = app.settings.map->GetInteger("screenshot", "width", 1280);
+        int height = app.settings.map->GetInteger("screenshot", "height", 720);
+        string outputDir = app.settings.map->GetString("screenshot", "output_dir", ".");
         float t = glfwGetTime();
-        renderRT(1280, 720, "screenshot" + to_string(app.stepCount) + ".png");
-        cout << glfwGetTime() - t << endl;
+        renderRT(width, height, outputDir + "/screenshot" + to_string(std::time(0)) + ".png");
+        cout << "Render time: " << glfwGetTime() - t << endl;
+    }
+    if (glfwGetKey(handle, GLFW_KEY_P) == GLFW_PRESS) {
+        paused = !paused;
+    	glfwSetInputMode(app.windowManager.getHandle(), GLFW_CURSOR, paused ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
     }
 }
 

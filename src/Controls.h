@@ -42,4 +42,6 @@ private:
     InputMode mode;
     std::string recordingFile;
     std::list<InputFrame> inputFrames;
+
+    bool paused = false;
 };

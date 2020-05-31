@@ -17,11 +17,11 @@
 using namespace glm;
 using namespace std;
 
-const int NUM_BOUNCES = 1;
-const int NUM_BOUNCE_RAYS = 16;
-const int LIGHT_RADIUS = 2;
-const int NUM_SHADOW_SAMPLES_X = 3;
-const int NUM_SHADOW_SAMPLES_Y = 3;
+int numBounces;
+int numBounceRays;
+int lightRadius;
+int numShadowSamplesX;
+int numShadowSamplesY;
 
 glm::vec3 randomDirInSphere(const glm::vec3 &normal) {
     vec3 dir = normalize(vec3(rand() % 2000 - 1000, rand() % 2000 - 1000, rand() % 2000 - 1000));
@@ -179,13 +179,13 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
             vec3 lightRight = cross(vec3(0, 1, 0), lightForward);
             vec3 lightUp = cross(lightForward, lightRight);
             vec3 directLight(0);
-            for (int x = 0; x < NUM_SHADOW_SAMPLES_X; x++) {
-                for (int y = 0; y < NUM_SHADOW_SAMPLES_Y; y++) {
+            for (int x = 0; x < numShadowSamplesX; x++) {
+                for (int y = 0; y < numShadowSamplesY; y++) {
                     float offsetX = 0;
                     float offsetY = 0;
-                    if (NUM_SHADOW_SAMPLES_X * NUM_SHADOW_SAMPLES_Y > 1) {
-                        offsetX = (x - NUM_SHADOW_SAMPLES_X / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / NUM_SHADOW_SAMPLES_X * LIGHT_RADIUS;
-                        offsetY = (y - NUM_SHADOW_SAMPLES_Y / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / NUM_SHADOW_SAMPLES_Y * LIGHT_RADIUS;
+                    if (numShadowSamplesX * numShadowSamplesY > 1) {
+                        offsetX = (x - numShadowSamplesX / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / numShadowSamplesX * lightRadius;
+                        offsetY = (y - numShadowSamplesY / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / numShadowSamplesY * lightRadius;
                         //offsetX = (2 * rand() / (float) RAND_MAX - 1) * LIGHT_RADIUS;
                         //offsetX = (2 * rand() / (float) RAND_MAX - 1) * LIGHT_RADIUS;
                     }
@@ -215,19 +215,19 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
                 vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
                 directLight += diffuse + specular;
             }
-            color += directLight / (float) (NUM_SHADOW_SAMPLES_X * NUM_SHADOW_SAMPLES_Y);
+            color += directLight / (float) (numShadowSamplesX * numShadowSamplesY);
 
 
         }
 
-        if (bounceDepth < NUM_BOUNCES) {
+        if (bounceDepth < numBounces) {
             vec3 indirectLight(0);
-            for (int i = 0; i < NUM_BOUNCE_RAYS / pow(2, bounceDepth); i++) {
+            for (int i = 0; i < numBounceRays / pow(2, bounceDepth); i++) {
                 vec3 dir = randomDirInSphere(hitNorm);
                 Ray bounceRay(hitPos, dir);
                 indirectLight += traceColor(bounceRay, kdtree, bounceDepth + 1);
             }
-            color += indirectLight * texColor / 255.f / (float) NUM_BOUNCE_RAYS;
+            color += indirectLight * texColor / 255.f / (float) numBounceRays;
         }
 
         return color;
@@ -266,12 +266,18 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
 
 void renderRT(int width, int height, const std::string &filename) {
     unsigned char *pixels = new unsigned char[width * height * 3];
-    float fov = 45;
     float invHeight = 1.0f / height;
     float invWidth = 1.0f / width;
     float aspect = width * invHeight;
+    float fov = app.settings.map->GetInteger("raytracing", "fov", 60);
     float angle = tan(M_PI * 0.5 * fov / 180);
     mat4 view = mat4_cast(quatLookAt(app.player.camera.lookAtPoint - app.player.camera.eye, app.player.camera.upVec));
+
+    numBounces = app.settings.map->GetInteger("raytracing", "num_bounces", 1);
+    numBounceRays = app.settings.map->GetInteger("raytracing", "num_bounce_rays", 16);
+    lightRadius = app.settings.map->GetInteger("raytracing", "light_radius", 2);
+    numShadowSamplesX = app.settings.map->GetInteger("raytracing", "num_shadow_samples_x", 3);
+    numShadowSamplesY = app.settings.map->GetInteger("raytracing", "num_shadow_samples_y", 3);
 
     KdTreeAccel kdtree(app.gameObjects, 80, 1, 0.5, 1, -1);
 

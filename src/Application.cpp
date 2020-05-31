@@ -19,12 +19,20 @@ using namespace std;
 using namespace glm;
 
 #define FPS 1.0f / 60.0f
-#define RT_FRAMESKIP 3
 
 Application app;
 
 void Application::run(std::string levelFilename, Controls::InputMode inputMode, std::string recordFilename, RenderMode renderMode) {
-    windowManager.init(1280, 720);
+#ifdef BUILD_DISTRIBUTE
+    string resourceDir = "resources/";
+#else
+    string resourceDir = "../resources/";
+#endif
+
+    settings.load(resourceDir + "settings.ini");
+    int windowWidth = settings.map->GetInteger("game", "width", 1280);
+    int windowHeight = settings.map->GetInteger("game", "height", 720);
+    windowManager.init(windowWidth, windowHeight);
     physics.init();
     player.init();
     controls.init(inputMode, recordFilename);
@@ -37,12 +45,6 @@ void Application::run(std::string levelFilename, Controls::InputMode inputMode, 
         portalLights[i].position = vec3(0,0,0);
         portalLights[i].portal = NULL;
     }
-
-#ifdef BUILD_DISTRIBUTE
-    string resourceDir = "resources/";
-#else
-    string resourceDir = "../resources/";
-#endif
 
     loadLevel(resourceDir + "levels/" + levelFilename);
     shaderManager.loadShaders(resourceDir + "shaders");
@@ -67,6 +69,11 @@ void Application::run(std::string levelFilename, Controls::InputMode inputMode, 
 
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
+    int frameskip = settings.map->GetInteger("video", "frameskip", 1);
+    int renderWidth = settings.map->GetInteger("video", "width", 1280);
+    int renderHeight = settings.map->GetInteger("video", "height", 720);
+    string renderDir = settings.map->GetString("video", "output_dir", "./render");
+
     float dt = 1.0f / 60.0f;
     while (!glfwWindowShouldClose(windowManager.getHandle())) {
         update(dt);
@@ -74,10 +81,10 @@ void Application::run(std::string levelFilename, Controls::InputMode inputMode, 
         glfwSwapBuffers(windowManager.getHandle());
         glfwPollEvents();
 
-        if (renderMode == RENDER_RAYTRACE && stepCount % RT_FRAMESKIP == 0) {
-            string numString = to_string(stepCount / RT_FRAMESKIP);
+        if (renderMode == RENDER_RAYTRACE && stepCount % frameskip == 0) {
+            string numString = to_string(stepCount / frameskip);
             numString = string(5 - numString.length(), '0') + numString;
-            renderRT(640, 360, "render/frame" + numString + ".png");
+            renderRT(renderWidth, renderHeight, renderDir + "/frame" + numString + ".png");
             if (controls.playbackFinished()) {
                 break;
             }
@@ -142,8 +149,9 @@ void Application::render(float dt) {
     glfwGetFramebufferSize(windowManager.getHandle(), &width, &height);
 
     float aspect = width / (float) height;
+    float fov = (float) settings.map->GetInteger("game", "fov", 60);
     mat4 V = player.camera.getLookAt();
-    mat4 P = glm::perspective(45.0f, aspect, 0.1f, 100.0f);
+    mat4 P = glm::perspective(radians(fov), aspect, 0.1f, 100.0f);
 
     if (controls.isHeld(Controls::LIGHT_FORWARD)) {
         lightPos += vec3(0,0,-1) * dt * lightSpeed;

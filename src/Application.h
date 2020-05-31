@@ -18,6 +18,7 @@
 #include "PortalOutline.h"
 #include "LightSwitch.h"
 #include "MiscItem.h"
+#include "Settings.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
@@ -65,6 +66,7 @@ public:
     WindowManager windowManager;
     Player player;
     Controls controls;
+    Settings settings;
 
     int width, height;
 
