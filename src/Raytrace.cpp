@@ -179,31 +179,43 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
             vec3 lightRight = cross(vec3(0, 1, 0), lightForward);
             vec3 lightUp = cross(lightForward, lightRight);
             vec3 directLight(0);
-            for (int x = 0; x < numShadowSamplesX; x++) {
-                for (int y = 0; y < numShadowSamplesY; y++) {
-                    float offsetX = 0;
-                    float offsetY = 0;
-                    if (numShadowSamplesX * numShadowSamplesY > 1) {
-                        offsetX = (x - numShadowSamplesX / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / numShadowSamplesX * lightRadius;
-                        offsetY = (y - numShadowSamplesY / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / numShadowSamplesY * lightRadius;
-                        //offsetX = (2 * rand() / (float) RAND_MAX - 1) * LIGHT_RADIUS;
-                        //offsetX = (2 * rand() / (float) RAND_MAX - 1) * LIGHT_RADIUS;
-                    }
-
-                    vec3 samplePos = light.position + lightRight * offsetX + lightUp * offsetY;
-
-                    if (!checkShadow(hitPos, samplePos, kdtree)) {
+            if (bounceDepth > 0 || numShadowSamplesX * numShadowSamplesY == 1) {
+                if (!checkShadow(hitPos, light.position, kdtree)) {
+                    Light lightSample = light;
+                    lightSample.position = light.position;
+                    lightSamples.push_back(lightSample);
+                }
+                // Check for light through portals
+                for (Portal &portal : app.portals) {
+                    vec3 transformedLightPos;
+                    if (!checkShadowThroughPortal(hitPos, light.position, portal, kdtree, transformedLightPos)) {
                         Light lightSample = light;
-                        lightSample.position = samplePos;
+                        lightSample.position = transformedLightPos;
                         lightSamples.push_back(lightSample);
                     }
-                    // Check for light through portals
-                    for (Portal &portal : app.portals) {
-                        vec3 transformedLightPos;
-                        if (!checkShadowThroughPortal(hitPos, samplePos, portal, kdtree, transformedLightPos)) {
+                }
+            }
+            else {
+                for (int x = 0; x < numShadowSamplesX; x++) {
+                    for (int y = 0; y < numShadowSamplesY; y++) {
+                        float offsetX = (x - numShadowSamplesX / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / numShadowSamplesX * lightRadius;
+                        float offsetY = (y - numShadowSamplesY / 2.f + 0.5f + (rand() / (float) RAND_MAX - 0.5)) / numShadowSamplesY * lightRadius;
+
+                        vec3 samplePos = light.position + lightRight * offsetX + lightUp * offsetY;
+
+                        if (!checkShadow(hitPos, samplePos, kdtree)) {
                             Light lightSample = light;
-                            lightSample.position = transformedLightPos;
+                            lightSample.position = samplePos;
                             lightSamples.push_back(lightSample);
+                        }
+                        // Check for light through portals
+                        for (Portal &portal : app.portals) {
+                            vec3 transformedLightPos;
+                            if (!checkShadowThroughPortal(hitPos, samplePos, portal, kdtree, transformedLightPos)) {
+                                Light lightSample = light;
+                                lightSample.position = transformedLightPos;
+                                lightSamples.push_back(lightSample);
+                            }
                         }
                     }
                 }
@@ -215,9 +227,10 @@ glm::vec3 traceColor(const Ray &ray, const KdTreeAccel &kdtree, int bounceDepth 
                 vec3 specular = material->spec * std::pow(std::max(0.f, dot(H, hitNorm)), material->shine) * light.intensity * 255.f;
                 directLight += diffuse + specular;
             }
-            color += directLight / (float) (numShadowSamplesX * numShadowSamplesY);
-
-
+            if (bounceDepth == 0) {
+                directLight /= (float) (numShadowSamplesX * numShadowSamplesY);
+            }
+            color += directLight;
         }
 
         if (bounceDepth < numBounces) {
